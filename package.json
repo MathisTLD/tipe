@@ -1,0 +1,23 @@
+{
+  "name": "tipe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "campbell start --dev"
+  },
+  "author": "MathisTLD",
+  "license": "ISC",
+  "dependencies": {
+    "@campbell/vueapps": "^2.0.0-beta.2",
+    "axios": "^0.21.1",
+    "campbell": "^1.0.0-beta.5",
+    "fs-extra": "^9.1.0",
+    "lowdb": "^1.0.0"
+  },
+  "devDependencies": {
+    "@campbell/cli": "^1.0.0-beta.1",
+    "eslint": "^7.22.0"
+  }
+}

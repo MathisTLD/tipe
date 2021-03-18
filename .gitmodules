@@ -1,0 +1,3 @@
+[submodule "lib/flight-calculator/calculator/vendors/ocaml-grib"]
+	path = lib/flight-calculator/calculator/vendors/ocaml-grib
+	url = git@github.com:MathisTLD/ocaml-grib.git

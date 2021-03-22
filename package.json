@@ -12,6 +12,7 @@
   "dependencies": {
     "@campbell/vueapps": "^2.0.0-beta.2",
     "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
     "campbell": "^1.0.0-beta.5",
     "fs-extra": "^9.1.0",
     "lowdb": "^1.0.0"

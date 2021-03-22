@@ -4,20 +4,9 @@ type options = {
   departure : location;
   arrival : location;
   precision : int;
+  directions : int;
 } [@@deriving yojson]
-let default_options = {
-  (* Paris *)
-  departure = {
-    lat = 48.856614;
-    lon = 2.3522219;
-  };
-  (* NYC *)
-  arrival = {
-    lat = 40.7127753;
-    lon = -74.0059728;
-  };
-  precision = 100;
-}
+
 let options_from_string str =
   let json = Yojson.Safe.from_string str in
   options_of_yojson json
@@ -41,19 +30,31 @@ let create_edge (grid: Geo.grid) (node_from: node) heading =
   let point_to = grid#resolve_next_point node_from.point heading in
   let distance = grid#distance_between_points node_from.point point_to in
   let speed = 10. in
-  let time = distance /. speed in
+  let time = (distance /. speed) in
   let gas = 0. in
   let node_to = {
     point=point_to;
     date=node_from.date +. time;
-    gas=node_from.gas +. gas;
+    gas=node_from.gas -. gas;
   } in
-  {nodes=(node_from,node_to);cost={time;gas=0.}}
+  {nodes=(node_from,node_to);cost={time;gas}}
+
+type step = {
+  loc: location;
+  gas: float;
+  date: int;
+} [@@deriving yojson_of]
+let step_of_node grid node =
+  {
+    loc=grid#location_of_point node.point;
+    gas=node.gas;
+    date=Float.round (node.date *. 1000.) |> Float.to_int
+  }
 
 type results = {
   options: options;
-  graph: node list;
-  path: node list;
+  graph: step list;
+  path: step list;
   time: int; (* time in ms *)
 } [@@deriving yojson_of]
 
@@ -65,8 +66,9 @@ let dijkstra options =
   let grid = new grid options.precision in
   let departure_point = grid#get_closest options.departure in
   let arrival_point = grid#get_closest options.arrival in
-  let queue = Heap.create (fun (a:edge) (b:edge) -> compare a.cost.time b.cost.time) () in
-  let headings = Geo.gen_headings 3 in
+  let queue = Heap.create ~cmp:(fun (a:edge) (b:edge) ->
+      compare ((snd a.nodes).date) ((snd b.nodes).date)) () in
+  let headings = Geo.gen_headings 4 in
   let add_edges node =
     List.iter (fun heading -> (
           let edge = create_edge grid node heading in
@@ -76,9 +78,9 @@ let dijkstra options =
       ) headings in
   add_edges {point=departure_point;date=Utils.Date.now ();gas = -1.};
   let i = ref 0 in
-  let max_i = 1000000 in
+  let max_i = 10000000 in
   let found = ref false in
-  let seen = Hashtbl.create (10*options.precision) in
+  let seen = Hashtbl.create (options.precision*options.precision/2) in
   while not !found && !i < max_i do
     if Heap.is_empty queue then failwith "no more edges"
     else (
@@ -108,8 +110,8 @@ let dijkstra options =
         )
       )
     | _ -> failwith "please provide a node" in
-  let path = get_path [fst (Hashtbl.find seen arrival_point)] in
-  let graph = Hashtbl.fold (fun _ (node,_) acc -> node::acc) seen [] in
+  let path = get_path [fst (Hashtbl.find seen arrival_point)] |> List.map (fun node -> step_of_node grid node) in
+  let graph = Hashtbl.fold (fun _ (node,_) acc -> node::acc) seen [] |> List.map (fun node -> step_of_node grid node) in
   (path,graph)
 
 

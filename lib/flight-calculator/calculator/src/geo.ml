@@ -43,7 +43,7 @@ let rec gen_headings n : heading list =
   | 1 -> [[N];[S];[E];[W]]
   | _ -> (
       let e_l = Array.to_list (Array.make (n-1) E) in
-      let w_l = Array.to_list (Array.make (n-1) E) in
+      let w_l = Array.to_list (Array.make (n-1) W) in
       (N::e_l)::(N::w_l)::(S::e_l)::(S::w_l)::(gen_headings (n-1))
     )
 (*

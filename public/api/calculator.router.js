@@ -1,8 +1,21 @@
+const bodyparser = require("body-parser");
+
 module.exports = {
   created() {
     this.router.get("/test", (req, res) => {
-      this.$app.calculator.test();
-      res.sendStatus(200);
+      this.$app.calculator
+        .createCalculation()
+        .run()
+        .then((results) => res.json(results))
+        .catch(() => res.sendStatus(400));
+    });
+    this.router.post("/run", bodyparser.json(), (req, res) => {
+      const opts = req.body;
+      this.$app.calculator
+        .createCalculation(opts)
+        .run()
+        .then((results) => res.json(results))
+        .catch(() => res.sendStatus(400));
     });
   },
 };

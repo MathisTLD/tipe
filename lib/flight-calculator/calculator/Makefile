@@ -3,9 +3,9 @@ OUTPUT = ${OUTPUT_DIR}calculator
 SRC_DIR = src
 BUILD_DIR = _build
 
-modules = geo wind algorithm index
+modules = utils geo wind algorithm index
 modules_cmx = $(foreach module,$(modules),$(BUILD_DIR)/$(module).cmx)
-pkg = yojson grib
+pkg = core_kernel.pairing_heap str yojson ppx_yojson_conv grib
 
 comma:= ,
 empty:=
@@ -20,12 +20,13 @@ executable: $(modules_cmx)
 	$(ocamlopt) -linkpkg -o $(OUTPUT) $(modules_cmx)
 
 .merlin:
+	rm -f .merlin
 	echo S $(SRC_DIR) >> .merlin
 	echo B $(BUILD_DIR) >> .merlin
 	echo PKG $(pkg) >> .merlin
 
-.PHONY: clean
+.PHONY: clean .merlin
 clean:
 	rm -rf $(BUILD_DIR)/**
 
-all: executable
+all: clean .merlin executable

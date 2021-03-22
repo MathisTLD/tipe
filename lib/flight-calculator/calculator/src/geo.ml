@@ -5,7 +5,7 @@ let earth_radius = 6371000. (* in meters *)
 type location = {
   lat : float;
   lon : float;
-}
+} [@@deriving yojson]
 let location_to_string ?(format="dd") (loc: location) =
   let deg_to_dms dd =
     let d = Float.floor dd in
@@ -46,8 +46,6 @@ let rec gen_headings n : heading list =
       let w_l = Array.to_list (Array.make (n-1) E) in
       (N::e_l)::(N::w_l)::(S::e_l)::(S::w_l)::(gen_headings (n-1))
     )
-
-type point = int * int
 (*
 deg
    x: 0 -> 360 (0 is lon = 0)
@@ -64,15 +62,22 @@ let deg_to_lon deg =
   if deg > 180. then deg -. 360.
   else deg
 
+type point = int * int
+(* grid object *)
 class grid (n: int) =
   object (self)
     val ny = n+1 (* n equal angle segments for one meridian so n+1 points (including one for each pole) *)
     val nx = 2*n (* 2n equal angle segments for one parallel so 2n points as lat -180 = lat 180 *)
     (* then 0 <= i <= n and 0 <= j <= 2n-1 *)
-    method location_from_point ((i,j): point) =
+    method id_of_point ((i,j): point) =
+      i*ny + j
+    method location_of_point ((i,j): point) =
       let lat = deg_to_lat (180. *. (Float.of_int i) /. (Float.of_int ny)) in
       let lon = deg_to_lon (360. *. (Float.of_int j) /. (Float.of_int nx)) in
       {lat;lon}
+    method distance_between_points (a:point) (b:point) =
+      (* consider adding caching *)
+      distance (self#location_of_point a) (self#location_of_point b)
     method get_closest (loc: location) =
       let i = Float.to_int (Float.round ((lat_to_deg loc.lat) /. 180. *. float_of_int ny)) in
       let j = Float.to_int (Float.round ((lon_to_deg loc.lon) /. 360. *. float_of_int nx)) in
@@ -87,7 +92,7 @@ class grid (n: int) =
       (top_right,top_left,bottom_left,bottom_right)
     method resolve_next_point (point: point) (heading: heading) =
       let get_opposite ((i,j): point): point =
-        (i,j+(nx/2) mod nx) in
+        (i,(j+(nx/2)) mod nx) in
       let rec flip_heading (heading: heading) : heading =
         match heading with
         | [] -> []
@@ -111,7 +116,7 @@ class grid (n: int) =
             )
             else resolve (i+1,j) rest
           )
-        | E::rest,(i,j) -> resolve (i,j+1 mod nx) rest
-        | W::rest,(i,j) -> resolve (i,if j = 0 then nx-1 else j-1) rest in
+        | E::rest,(i,j) -> resolve (i,(j+1) mod nx) rest
+        | W::rest,(i,j) -> resolve (i,if j = 0 then nx - 1 else j - 1) rest in
       resolve point heading
   end

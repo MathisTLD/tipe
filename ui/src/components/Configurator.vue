@@ -42,7 +42,7 @@
               />
             </v-col>
             <v-col cols="12">
-              <v-switch inset v-model="weather" label="Use Weather" />
+              <v-switch inset v-model="weather" label="Use Weather" readonly />
             </v-col>
           </v-row>
           <v-subheader>Display</v-subheader>
@@ -80,6 +80,18 @@
 import axios from "axios";
 import LocationSearch from "./LocationSearch";
 import PrecisionSlider from "./PrecisionSlider";
+
+import colors from "vuetify/lib/util/colors";
+const palette = ["red", "green", "amber", "blue", "purple", "teal"].map(
+  name => colors[name].base
+);
+
+let colorIndex = 0;
+function getColor() {
+  const color = palette[colorIndex];
+  colorIndex = (colorIndex + 1) % palette.length;
+  return color;
+}
 
 function toRad(x) {
   return (x * Math.PI) / 180;
@@ -145,11 +157,11 @@ export default {
       // options
       algorithm: "dijkstra",
       departure: locations.paris,
-      arrival: locations.miami,
+      arrival: locations.florence,
       precision: null, // automatically set on creation
       directions: 6,
-      weather: false,
-      color: "#ffffff"
+      weather: true,
+      color: getColor()
     };
   },
   watch: {
@@ -190,13 +202,14 @@ export default {
         };
         this.$progress.close();
         this.$map.display({ plan, options });
+        this.color = getColor();
       });
     },
     autoPrecision() {
       const dBetweenPoles = 20003931.5;
       const d = distance(this.departure, this.arrival);
       // TODO: fine tuning
-      const n = 150 / (d / dBetweenPoles);
+      const n = Math.round(100 / (d / dBetweenPoles)) || 1; // ensure strictly positive int
       return n;
     },
     updatePrecision() {

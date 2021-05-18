@@ -9,10 +9,10 @@
     <v-btn color="primary" fab @click="toggleConfigurator">
       <v-icon>fa-map-marked</v-icon>
     </v-btn>
-    <v-btn fab icon @click="clearEntities">
+    <v-btn color="secondary" fab @click="clear">
       <v-icon>fa-broom</v-icon>
     </v-btn>
-    <v-btn fab icon @click="toggleWind" :dark="wind">
+    <v-btn color="secondary" fab @click="toggleWind" :outlined="!wind">
       <v-icon>fa-wind</v-icon>
     </v-btn>
   </v-speed-dial>
@@ -37,8 +37,8 @@ export default {
     }
   },
   methods: {
-    clearEntities() {
-      this.$map.clearEntities();
+    clear() {
+      this.$map.clear();
     },
     toggleWind() {
       if (this.wind) this.$map.hideWind();

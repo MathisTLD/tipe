@@ -19,7 +19,10 @@ function setView(plan) {
   });
 }
 
-function display({ plan, options }) {
+function display(results) {
+  const { plan, options } = results;
+  this.results.push(results);
+  console.log(results);
   setView.call(this, plan);
   const degreesArray = plan.path
     .map(({ loc }) => {

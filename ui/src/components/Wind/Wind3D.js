@@ -84,7 +84,7 @@ class Wind3D {
   }
   removePrimitives() {
     [
-      this.particleSystem.particlesComputing,
+      this.particleSystem.particlesComputing.primitives,
       this.particleSystem.particlesRendering.primitives
     ].forEach(primitives =>
       Object.values(primitives).forEach(primitive =>

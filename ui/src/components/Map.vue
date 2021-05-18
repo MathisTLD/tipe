@@ -1,6 +1,5 @@
 <template>
   <div id="mapContainer">
-    <Progress ref="progress" />
     <div id="cesiumCredit" />
     <div id="cesiumContainer" />
   </div>
@@ -11,23 +10,25 @@ window.CESIUM_BASE_URL = "";
 import * as Cesium from "cesium/Cesium";
 import "cesium/Widgets/widgets.css";
 
-import Progress from "./Progress";
-// import mapMixin from "./map-mixin";
+// TODO: make heatmaps work or delete them
+import Wind3D from "./Wind/Wind3D";
+
+import mapMixin from "./map-mixin";
 export default {
-  // mixins: [mapMixin],
-  components: {
-    Progress
-  },
+  mixins: [mapMixin],
   data() {
     return {
       loading: true,
       status: "loading map",
-      cache: {}
+      wind: false
     };
   },
   computed: {
+    $app() {
+      return this.$root.$children[0];
+    },
     $progress() {
-      return this.$refs.progress;
+      return this.$app.$refs.progress;
     }
   },
   async mounted() {
@@ -47,6 +48,9 @@ export default {
       creditContainer: "cesiumCredit",
       // sceneMode: Cesium.SceneMode.SCENE2D,
       // projection
+      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+        url: "https://tile.openstreetmap.org/"
+      }),
       mapProjection: new Cesium.WebMercatorProjection()
     });
 
@@ -57,10 +61,25 @@ export default {
       }.bind(this),
       3000
     );
+    this.showWind();
+  },
+  beforeDestroy() {
+    this.hideWind(); // prevents errors on hot relaod
   },
   methods: {
     clearEntities() {
       this.viewer.entities.removeAll();
+    },
+    showWind() {
+      this.wind3D = new Wind3D(this.viewer, false); // snd arg represents debug mode
+      this.wind = true;
+    },
+    hideWind() {
+      if (this.wind3D) {
+        this.wind3D.destroy();
+        delete this.wind3D;
+        this.wind = false;
+      }
     }
   }
 };

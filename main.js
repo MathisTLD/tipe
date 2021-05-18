@@ -14,6 +14,11 @@ Campbell.appConfig.extendSchema({
       default: "./data",
       env: "DATA_DIR",
     },
+    bin: {
+      format: "string",
+      default: "./bin",
+      env: "BIN_DIR",
+    },
   },
 });
 

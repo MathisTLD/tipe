@@ -1,13 +1,19 @@
 <template>
-  <v-speed-dial v-model="open" fixed bottom left>
+  <v-speed-dial v-model="open" fixed bottom right>
     <template v-slot:activator>
       <v-btn dark fab>
         <v-icon v-if="open"> fa-times </v-icon>
         <v-icon v-else> fa-angle-up </v-icon>
       </v-btn>
     </template>
+    <v-btn color="primary" fab @click="toggleConfigurator">
+      <v-icon>fa-map-marked</v-icon>
+    </v-btn>
     <v-btn fab icon @click="clearEntities">
       <v-icon>fa-broom</v-icon>
+    </v-btn>
+    <v-btn fab icon @click="toggleWind" :dark="wind">
+      <v-icon>fa-wind</v-icon>
     </v-btn>
   </v-speed-dial>
 </template>
@@ -16,21 +22,31 @@
 export default {
   data() {
     return {
-      open: false,
+      open: false
     };
   },
   computed: {
-    $main() {
-      return this.$parent.$parent.$parent;
+    $app() {
+      return this.$root.$children[0];
     },
     $map() {
-      return this.$main.$refs.map;
+      return this.$app.$refs.map;
     },
+    wind() {
+      return this.$map.wind;
+    }
   },
   methods: {
     clearEntities() {
       this.$map.clearEntities();
     },
-  },
+    toggleWind() {
+      if (this.wind) this.$map.hideWind();
+      else this.$map.showWind();
+    },
+    toggleConfigurator() {
+      this.$app.$refs.configurator.toggle();
+    }
+  }
 };
 </script>

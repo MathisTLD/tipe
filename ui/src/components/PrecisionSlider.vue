@@ -4,6 +4,7 @@
     label="Precision"
     :max="precisions.length - 1"
     :tick-labels="precisions.map(x => x.label)"
+    hide-details
   />
 </template>
 

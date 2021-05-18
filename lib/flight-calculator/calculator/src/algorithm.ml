@@ -12,42 +12,30 @@ let options_from_string str =
   options_of_yojson json
 
 type node = {
-  point: int * int;
+  point: point;
   date: float;
-  gas: float;
-} [@@deriving yojson_of]
-let create_node ?(gas = -1.) point date =
-  { point;date;gas }
+  fuel: float;
+}
+let create_node ?(fuel = -1.) point date =
+  { point;date;fuel }
 type edge_cost = {
   time: float;
-  gas: float;
+  fuel: float;
 }
 type edge = {
   nodes: node * node;
   cost: edge_cost;
 }
-let create_edge (grid: Geo.grid) (node_from: node) heading =
-  let point_to = grid#resolve_next_point node_from.point heading in
-  let distance = grid#distance_between_points node_from.point point_to in
-  let speed = 10. in
-  let time = (distance /. speed) in
-  let gas = 0. in
-  let node_to = {
-    point=point_to;
-    date=node_from.date +. time;
-    gas=node_from.gas -. gas;
-  } in
-  {nodes=(node_from,node_to);cost={time;gas}}
 
 type step = {
   loc: location;
-  gas: float;
+  fuel: float;
   date: int;
 } [@@deriving yojson_of]
 let step_of_node grid node =
   {
     loc=grid#location_of_point node.point;
-    gas=node.gas;
+    fuel=node.fuel;
     date=Float.round (node.date *. 1000.) |> Float.to_int
   }
 
@@ -64,19 +52,44 @@ module Heap = Pairing_heap
 let dijkstra options =
   print_endline "running dijkstra";
   let grid = new grid options.precision in
+  let aircraft = new Aircraft.aircraft grid in
   let departure_point = grid#get_closest options.departure in
   let arrival_point = grid#get_closest options.arrival in
-  let queue = Heap.create ~cmp:(fun (a:edge) (b:edge) ->
-      compare ((snd a.nodes).date) ((snd b.nodes).date)) () in
-  let headings = Geo.gen_headings 4 in
+  let compare_edges ({nodes=(_,a)}:edge) ({nodes=(_,b)}:edge) = compare a.date b.date in
+  let queue = Heap.create ~cmp:compare_edges () in
+  let queue_cache = Hashtbl.create (grid#ny*grid#nx/2) in
+  let headings = Geo.gen_headings options.directions in
+  let create_edge (node_from: node) heading =
+    let point_to = grid#resolve_next_point node_from.point heading in
+    let {time;fuel}: Aircraft.cost = aircraft#get_cost node_from.date node_from.point heading in
+    let node_to = {
+      point=point_to;
+      date=node_from.date +. time;
+      fuel=node_from.fuel -. fuel;
+    } in
+    {nodes=(node_from,node_to);cost={time;fuel}} in
   let add_edges node =
     List.iter (fun heading -> (
-          let edge = create_edge grid node heading in
-          (* TODO: consider replacing edge if already in queue with lower priority to limit queue size *)
-          Heap.add queue edge
+          let edge = create_edge node heading in
+          let arrival_point = (snd edge.nodes).point in
+          (* TODO: optimize insertions to limit queue size *)
+          (* see https://github.com/janestreet/core_kernel/blob/master/pairing_heap/src/pairing_heap.mli *)
+          let cached = Hashtbl.find_opt queue_cache arrival_point in
+          if(Option.is_none cached) then (
+            let new_token = Heap.add_removable queue edge in
+            Hashtbl.add queue_cache arrival_point (new_token,edge);
+          ) else (
+            let (prev_token,prev_edge) = Option.get cached in
+            if(compare_edges edge prev_edge < 0) then (
+              let new_token = Heap.update queue prev_token edge in
+              Hashtbl.replace queue_cache arrival_point (new_token,edge)
+            )
+            (* else do nothing and ignore current edge *)
+          )
         )
       ) headings in
-  add_edges {point=departure_point;date=Utils.Date.now ();gas = -1.};
+  add_edges {point=departure_point;date=Utils.Date.now ();fuel = -1.};
+  Utils.Output.verbose "lesss go";
   let i = ref 0 in
   let max_i = 10000000 in
   let found = ref false in
@@ -85,7 +98,7 @@ let dijkstra options =
     if Heap.is_empty queue then failwith "no more edges"
     else (
       i := !i + 1;
-      if(!i mod 100000 = 0) then print_endline (Printf.sprintf "%d iteration, %d nodes processed" !i (Hashtbl.length seen));
+      if(!i mod 1000 = 0) then print_endline (Printf.sprintf "%d iteration, %d nodes processed" !i (Hashtbl.length seen));
       let edge = Heap.pop_exn queue in
       let node = snd edge.nodes in
       if (Hashtbl.mem seen node.point) then ()
@@ -122,8 +135,6 @@ let run options =
   Printf.sprintf "- departure: " ^ (location_to_string options.departure) |> Output.verbose;
   Printf.sprintf "- arrival: " ^ (location_to_string options.arrival) |> Output.verbose;
   Printf.sprintf "- precision: %d" options.precision |> Output.verbose;
-  (* let (u,v) = Wind.get_wind options.departure (Utils.Date.now ()) 500 in
-     print_endline ("wind: "^(Float.to_string u)^" "^(Float.to_string v)); *)
   let time_start = Utils.Date.now () in
   let (path,graph) = dijkstra options in
   let time = ((Utils.Date.now ()) -. time_start) *. 1000. |> Float.round |> Float.to_int in

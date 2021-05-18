@@ -3,7 +3,7 @@ OUTPUT = ${OUTPUT_DIR}calculator
 SRC_DIR = src
 BUILD_DIR = _build
 
-modules = utils geo wind algorithm index
+modules = utils geo wind aircraft algorithm index
 modules_cmx = $(foreach module,$(modules),$(BUILD_DIR)/$(module).cmx)
 pkg = core_kernel.pairing_heap str yojson ppx_yojson_conv grib
 

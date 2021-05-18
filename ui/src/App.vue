@@ -1,16 +1,17 @@
 <template>
   <v-app>
-    <v-app-bar app dense>
+    <!-- <v-app-bar app dense>
       <v-toolbar-title>FIND_A_NAME</v-toolbar-title>
       <v-spacer />
       {{ version }}
-    </v-app-bar>
+    </v-app-bar> -->
 
     <v-main>
       <v-container fluid class="fill-height ma-0 pa-0">
         <Map ref="map" />
-        <Configurator />
-        <!-- <Actions /> -->
+        <Configurator ref="configurator" />
+        <Progress ref="progress" />
+        <Actions />
       </v-container>
     </v-main>
   </v-app>
@@ -18,14 +19,16 @@
 
 <script>
 import Map from "./components/Map";
+import Actions from "./components/Actions";
 import Configurator from "./components/Configurator";
-// import Actions from "./components/Actions";
+import Progress from "./components/Progress";
 
 export default {
   components: {
     Map,
-    Configurator
-    // Actions,
+    Actions,
+    Configurator,
+    Progress
   },
   data() {
     return {

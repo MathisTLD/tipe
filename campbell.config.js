@@ -2,22 +2,32 @@ const path = require("path");
 const fs = require("fs-extra");
 
 module.exports = {
-  presets: [
-    require("@campbell/vueapps/build/preset"),
-    function copyDotEnv() {
-      this.hooks["build"].tapPromise("CopyDotEnv", async () => {
-        const src = path.resolve(__dirname, ".env");
-        if (await fs.pathExists(src)) {
-          await fs.copy(src, path.resolve(this.resolvePath("#output"), ".env"));
-        }
-      });
+  presets: [require("@campbell/vueapps/build/preset")],
+  plugins: [
+    // binaries
+    {
+      hooks: {
+        async build(builder) {
+          const BIN_DIR = builder.resolvePath(["#output", "bin"]);
+          await fs.ensureDir(BIN_DIR);
+          // calculator
+          await require("./lib/flight-calculator/compile")(BIN_DIR);
+        },
+      },
     },
-    function compileCalculator() {
-      const compile = async () =>
-        await require("./lib/flight-calculator/compile")(
-          this.resolvePath(["#output"])
-        );
-      this.hooks["build"].tapPromise("CompileCalculator", compile);
+    // copy .env
+    // FIXME: should only use this in dev mode
+    {
+      hooks: {
+        async build(builder) {
+          const src = path.resolve(__dirname, ".env");
+          if (await fs.pathExists(src)) {
+            const dest = path.resolve(builder.resolvePath("#output"), ".env");
+            await fs.remove(dest);
+            await fs.copy(src, dest);
+          }
+        },
+      },
     },
   ],
   vueapps: {

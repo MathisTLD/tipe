@@ -5,6 +5,7 @@
     :loading="loadingResults"
     :search-input.sync="search"
     hide-no-data
+    hide-details
     item-text="description"
     prepend-icon="fa-map-marker-alt"
     placeholder="Start typing to Search"

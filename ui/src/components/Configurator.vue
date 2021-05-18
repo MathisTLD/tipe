@@ -81,6 +81,29 @@ import axios from "axios";
 import LocationSearch from "./LocationSearch";
 import PrecisionSlider from "./PrecisionSlider";
 
+function toRad(x) {
+  return (x * Math.PI) / 180;
+}
+
+function distance(loc1, loc2) {
+  const { lat: lat1, lon: lon1 } = loc1;
+  const { lat: lat2, lon: lon2 } = loc2;
+  const R = 6371000; // m
+  //has a problem with the .toRad() method below.
+  const x1 = lat2 - lat1;
+  const dLat = toRad(x1);
+  const x2 = lon2 - lon1;
+  const dLon = toRad(x2);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 const locations = {
   paris: {
     place_id: "ChIJD7fiBh9u5kcRYJSMaMOCCwQ",
@@ -123,11 +146,19 @@ export default {
       algorithm: "dijkstra",
       departure: locations.paris,
       arrival: locations.miami,
-      precision: 200,
-      directions: 4,
+      precision: null, // automatically set on creation
+      directions: 6,
       weather: false,
       color: "#ffffff"
     };
+  },
+  watch: {
+    departure() {
+      this.updatePrecision();
+    },
+    arrival() {
+      this.updatePrecision();
+    }
   },
   computed: {
     $app() {
@@ -144,6 +175,9 @@ export default {
       return { arrival, departure, precision, directions };
     }
   },
+  created() {
+    this.updatePrecision();
+  },
   methods: {
     start() {
       this.close();
@@ -157,6 +191,16 @@ export default {
         this.$progress.close();
         this.$map.display({ plan, options });
       });
+    },
+    autoPrecision() {
+      const dBetweenPoles = 20003931.5;
+      const d = distance(this.departure, this.arrival);
+      // TODO: fine tuning
+      const n = 150 / (d / dBetweenPoles);
+      return n;
+    },
+    updatePrecision() {
+      this.precision = this.autoPrecision(); // this value is automatically changed to the closest possible value
     },
     cancel() {
       this.close();

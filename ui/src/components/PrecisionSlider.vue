@@ -12,7 +12,7 @@
 // https://en.wikipedia.org/wiki/Earth%27s_circumference
 // let dBetweenPoles = 20003.9315;
 
-let precisions = [
+const precisions = [
   { label: "200km", q: 100 },
   { label: "100km", q: 200 },
   { label: "50km", q: 400 },
@@ -38,10 +38,26 @@ export default {
     i(i) {
       let q = this.precisions[i].q;
       this.$emit("input", q);
+    },
+    value(x) {
+      this.i = this.determineIndex(x);
+    }
+  },
+  methods: {
+    determineIndex(n) {
+      if (!n) return 0;
+      const i = precisions
+        .map(({ q }) => q)
+        .reduce(
+          (prev_i, val, curr_i, arr) =>
+            Math.abs(val - n) < Math.abs(arr[prev_i] - n) ? curr_i : prev_i,
+          0
+        );
+      return i;
     }
   },
   created() {
-    this.i = this.precisions.filter(({ q }) => q <= this.value).length - 1;
+    this.i = this.determineIndex(this.value);
   }
 };
 </script>

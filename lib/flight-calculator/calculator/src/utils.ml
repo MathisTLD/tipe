@@ -1,7 +1,3 @@
-let mean (l: (float * float) list) =
-  let (t,x) = List.fold_left (fun (t,x) (d,v) -> (t+.d,x+.(d*.v))) (0.,0.) l in
-  x /. t
-
 module Date = struct
   let to_yyyymmdd t =
     let tm = Unix.gmtime t in
@@ -20,7 +16,7 @@ module Output = struct
     match lvl with
     | 0 |1 -> log_level := lvl
     | _ -> failwith (Printf.sprintf "unknown log level: %d" lvl)
-  let verbose str =
+  let verbose str=
     if(!log_level >= 1) then print_endline str
   let event ev data =
     Printf.sprintf "---%s" ev |> print_endline;

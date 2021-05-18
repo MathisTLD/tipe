@@ -125,10 +125,10 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
       let i_float = (lat_to_deg lat) /. 180. in
       let j_float = (lon_to_deg lon) /. 180. in
       let top_left = (Float.to_int (Float.floor i_float),Float.to_int (Float.floor j_float)) in
-      let top_right = (Float.to_int (Float.floor i_float),Float.to_int (Float.ceil j_float)) in
+      let top_right = (Float.to_int (Float.floor i_float) mod nx,Float.to_int (Float.ceil j_float)) in
       let bottom_left = (Float.to_int (Float.ceil i_float),Float.to_int (Float.floor j_float)) in
-      let bottom_right = (Float.to_int (Float.ceil i_float),Float.to_int (Float.ceil j_float)) in
-      (top_right,top_left,bottom_left,bottom_right)
+      let bottom_right = (Float.to_int (Float.ceil i_float) mod nx,Float.to_int (Float.ceil j_float)) in
+      [|top_right;top_left;bottom_left;bottom_right|]
     method resolve_next_point (point: point) (heading: heading): point =
       let get_opposite ((i,j,k): point): point =
         (i,(j+(nx/2)) mod nx,k) in

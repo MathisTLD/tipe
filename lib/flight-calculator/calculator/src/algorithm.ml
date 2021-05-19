@@ -5,6 +5,8 @@ type options = {
   arrival : location;
   precision : int;
   directions : int;
+  weather: bool;
+  aircraft: string;
 } [@@deriving yojson]
 
 let options_from_string str =
@@ -52,7 +54,7 @@ module Heap = Pairing_heap
 let dijkstra options =
   print_endline "running dijkstra";
   let grid = new grid options.precision in
-  let aircraft = new Aircraft.aircraft grid in
+  let aircraft = new Aircraft.aircraft ~model:options.aircraft grid in
   let departure_point = grid#get_closest options.departure in
   let arrival_point = grid#get_closest options.arrival in
   let compare_edges ({nodes=(_,a)}:edge) ({nodes=(_,b)}:edge) = compare a.date b.date in
@@ -61,7 +63,7 @@ let dijkstra options =
   let headings = Geo.gen_headings options.directions in
   let create_edge (node_from: node) heading =
     let point_to = grid#resolve_next_point node_from.point heading in
-    let {time;fuel}: Aircraft.cost = aircraft#get_cost node_from.date node_from.point heading in
+    let {time;fuel}: Aircraft.cost = aircraft#get_cost ~use_weather:options.weather node_from.date node_from.point heading in
     let node_to = {
       point=point_to;
       date=node_from.date +. time;

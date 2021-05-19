@@ -81,19 +81,18 @@ class aircraft  ?(model = "Beech Baron") (grid: Geo.grid) =
   object (self)
     val props = Hashtbl.find aircrafts model
     (* inspired by https://www.eucass.eu/doi/EUCASS2017-254.pdf *)
-    method get_speed (tas: float) (date: float) (loc: location) (heading: heading) =
-      let wind = get_wind date  loc in
-      (* let wind = (0.,0.) in *)
+    method get_speed ?(use_weather=false) (tas: float) (date: float) (loc: location) (heading: heading) =
+      let wind = if use_weather then get_wind date  loc else (0.,0.) in
       let cape = heading_to_vect heading in
       let w_a = prod_scal wind cape in (* along-track wind *)
       let w_x = prod_scal wind (rot cape) in (* cross-track wind *)
       (sqrt ((tas *. tas) -. (w_x *. w_x))) +. w_a
-    method get_cost (date: float) (point1: point) (heading: heading)  =
+    method get_cost ?(use_weather=false) (date: float) (point1: point) (heading: heading)  =
       let point2 = grid#resolve_next_point point1 heading in
       let loc1 = grid#location_of_point point1 in
       let loc2 = grid#location_of_point point2 in
       let phase = (if loc1.alt = loc2.alt then props.performances.cruise else if loc1.alt < loc2.alt then props.performances.climb else props.performances.descent) in
-      let speed = self#get_speed phase.speed date loc1 heading in
+      let speed = self#get_speed ~use_weather:use_weather phase.speed date loc1 heading in (* FIXME: should get speed at point between loc1 and loc2 *)
       let distance = grid#distance_between_points point1 point2 in
       let time = distance /. speed in
       let fuel = phase.fuelFlow *. time in

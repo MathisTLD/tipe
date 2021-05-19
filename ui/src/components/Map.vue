@@ -76,7 +76,17 @@ export default {
       }.bind(this),
       3000
     );
-    this.showWind();
+    // hide wind when not in 3D
+    this.viewer.scene.morphStart.addEventListener((_, prevMode) => {
+      if (prevMode === 3) this.hideWind();
+    });
+    this.viewer.scene.morphComplete.addEventListener(
+      (_, prevMode, nextMode) => {
+        if (nextMode === 3) this.showWind();
+      }
+    );
+
+    if (this.viewer.scene._mode === 3) this.showWind();
   },
   beforeDestroy() {
     this.hideWind(); // prevents errors on hot relaod

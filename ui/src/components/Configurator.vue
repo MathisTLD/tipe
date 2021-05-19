@@ -42,7 +42,10 @@
               />
             </v-col>
             <v-col cols="12">
-              <v-switch inset v-model="weather" label="Use Weather" readonly />
+              <AircraftSelector v-model="aircraft" />
+            </v-col>
+            <v-col cols="12">
+              <v-switch inset v-model="weather" label="Use Weather" />
             </v-col>
           </v-row>
           <v-subheader>Display</v-subheader>
@@ -79,6 +82,7 @@
 <script>
 import axios from "axios";
 import LocationSearch from "./LocationSearch";
+import AircraftSelector from "./AircraftSelector";
 import PrecisionSlider from "./PrecisionSlider";
 
 import colors from "vuetify/lib/util/colors";
@@ -146,7 +150,8 @@ const locations = {
 export default {
   components: {
     LocationSearch,
-    PrecisionSlider
+    PrecisionSlider,
+    AircraftSelector
   },
   data() {
     return {
@@ -160,6 +165,7 @@ export default {
       arrival: locations.florence,
       precision: null, // automatically set on creation
       directions: 6,
+      aircraft: null, // automatically set on creation
       weather: true,
       color: getColor()
     };
@@ -183,8 +189,15 @@ export default {
       return this.$app.$refs.progress;
     },
     options() {
-      const { arrival, departure, precision, directions } = this;
-      return { arrival, departure, precision, directions };
+      const {
+        arrival,
+        departure,
+        precision,
+        directions,
+        aircraft,
+        weather
+      } = this;
+      return { arrival, departure, precision, directions, aircraft, weather };
     }
   },
   created() {
@@ -195,15 +208,26 @@ export default {
       this.close();
       this.$progress.message = "calculating ...";
       this.$progress.open();
-      axios.post("/api/calculator/run", this.options).then(res => {
-        const plan = res.data;
-        const options = {
-          color: this.color
-        };
-        this.$progress.close();
-        this.$map.display({ plan, options });
-        this.color = getColor();
-      });
+      axios
+        .post("/api/calculator/run", this.options)
+        .then(res => {
+          const plan = res.data;
+          const options = {
+            ...this.options,
+            color: this.color
+          };
+          this.$progress.close();
+          this.$map.display({ plan, options });
+
+          // change color for next itinerary
+          this.color = getColor();
+        })
+        .catch(() => {
+          this.$progress.message = "got error"; // TODO: tell more about the failure
+          setTimeout(() => {
+            this.$progress.close();
+          }, 1000);
+        });
     },
     autoPrecision() {
       const dBetweenPoles = 20003931.5;

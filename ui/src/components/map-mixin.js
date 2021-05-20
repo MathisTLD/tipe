@@ -1,8 +1,5 @@
 import * as Cesium from "cesium/Cesium";
 window.Cesium = Cesium;
-window.h337 = require("../../vendors/heatmap.js");
-require("cesium-heatmap");
-const CesiumHeatmap = window.CesiumHeatmap;
 
 function cleanup() {
   this.viewer.entities.removeAll();
@@ -19,19 +16,24 @@ function setView(plan) {
   });
 }
 
+// TODO: make heatmaps work or delete them
+window.h337 = require("../../vendors/heatmap.js");
+require("cesium-heatmap");
+const CesiumHeatmap = window.CesiumHeatmap;
+
 function display(results) {
   const { plan, options } = results;
   this.results.push(results);
   console.log(results);
   setView.call(this, plan);
-  const degreesArray = plan.path
+  const coordinates = plan.path
     .map(({ loc }) => {
-      return [loc.lon, loc.lat];
+      return [loc.lon, loc.lat, loc.alt];
     })
     .flat();
   this.viewer.entities.add({
     polyline: {
-      positions: new Cesium.Cartesian3.fromDegreesArray(degreesArray),
+      positions: new Cesium.Cartesian3.fromDegreesArrayHeights(coordinates),
       material: new Cesium.Color.fromCssColorString(options.color),
       width: 3
     }

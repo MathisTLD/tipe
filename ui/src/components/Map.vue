@@ -20,7 +20,6 @@ import "cesium/Widgets/widgets.css";
 
 import ResultsCard from "./ResultsCard";
 
-// TODO: make heatmaps work or delete them
 import Wind3D from "./Wind/Wind3D";
 
 import mapMixin from "./map-mixin";

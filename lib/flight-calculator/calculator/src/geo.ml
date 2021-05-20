@@ -27,14 +27,18 @@ let location_to_string ?(format="dd") (loc: location) =
       Printf.sprintf "%s %s" lat lon
     )
   | _ -> failwith "Unsupported location format: "^format
+
+let to_rad deg =
+  deg *. (Float.pi /. 180.)
+
 let distance (loc1: location) (loc2: location) =
-  let open Float in
-  let lat1 = loc1.lat *. (pi /. 180.) in
-  let lat2 = loc2.lat *. (pi /. 180.) in
-  let lon1 = loc1.lon *. (pi /. 180.) in
-  let lon2 = loc2.lon *. (pi /. 180.) in
+  let lat1 = to_rad loc1.lat in
+  let lat2 = to_rad loc2.lat in
+  let lon1 = to_rad loc1.lon in
+  let lon2 = to_rad loc2.lon in
   let mh = (loc1.alt +. loc2.alt) /. 2. in
   let dh = loc2.alt -. loc1.alt in
+  let open Float in
   let d = 2. *. (earth_radius +. mh) *.
           asin (
             sqrt (
@@ -43,6 +47,19 @@ let distance (loc1: location) (loc2: location) =
             )
           ) in
   sqrt ((d*.d) +. (dh*.dh))
+
+(* https://www.igismap.com/formula-to-find-bearing-or-heading-angle-between-two-points-latitude-longitude/ *)
+(* Bearing would be measured from North direction i.e 0° bearing means North, 90° bearing is East, 180° bearing is measured to be South, and 270° to be West. *)
+let bearing (loc1: location) (loc2: location) =
+  let dlon = to_rad (loc2.lon -. loc1.lon) in
+  let lat1 = to_rad loc1.lat in
+  let lat2 = to_rad loc2.lat in
+  let open Float in
+  let x = cos lat2 *. sin dlon in
+  let y = (cos lat1 *. sin lat2) -. (sin lat1 *. cos lat2 *. cos dlon) in
+  atan2 x y
+
+
 type direction = | N | S | E | W | Up | Down
 type heading = direction list
 (* generates a list of 4*n headings *)
@@ -101,6 +118,7 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
     (* then 0 <= i <= n and 0 <= j <= 2n-1 *)
     method nx = nx
     method ny = ny
+    method nz = nz
     method id_of_point ((i,j,k): point) =
       k*nx*ny + i*ny + j
     method location_of_point ((i,j,k): point) =

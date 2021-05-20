@@ -53,17 +53,25 @@ module Heap = Pairing_heap
 
 let dijkstra options =
   print_endline "running dijkstra";
-  let grid = new grid options.precision in
-  let aircraft = new Aircraft.aircraft ~model:options.aircraft grid in
+  let aircraft = new Aircraft.aircraft options.aircraft in
+  (* FIXME: add altitudes that corresponds to airecraft's specs *)
+  let grid = new grid ~altitudes:[|0.;10000.|] options.precision in
   let departure_point = grid#get_closest options.departure in
   let arrival_point = grid#get_closest options.arrival in
   let compare_edges ({nodes=(_,a)}:edge) ({nodes=(_,b)}:edge) = compare a.date b.date in
   let queue = Heap.create ~cmp:compare_edges () in
   let queue_cache = Hashtbl.create (grid#ny*grid#nx/2) in
-  let headings = Geo.gen_headings options.directions in
+  let headings_horizontal = Geo.gen_headings options.directions in
+  let headings_up = List.map (fun heading -> Up::heading) headings_horizontal in
+  let headings_down = List.map (fun heading -> Down::heading) headings_horizontal in
+  let headings_top = headings_horizontal @ headings_down in
+  let headings_floor = headings_up in
+  let headings_all = headings_horizontal @ headings_up @ headings_down in
   let create_edge (node_from: node) heading =
     let point_to = grid#resolve_next_point node_from.point heading in
-    let {time;fuel}: Aircraft.cost = aircraft#get_cost ~use_weather:options.weather node_from.date node_from.point heading in
+    let loc_from = grid#location_of_point node_from.point in
+    let loc_to = grid#location_of_point point_to in
+    let {time;fuel}: Aircraft.cost = aircraft#get_cost ~use_weather:options.weather node_from.date loc_from loc_to in
     let node_to = {
       point=point_to;
       date=node_from.date +. time;
@@ -89,7 +97,13 @@ let dijkstra options =
             (* else do nothing and ignore current edge *)
           )
         )
-      ) headings in
+      ) (
+      (* add eventual vertical movements *)
+      match node.point with
+      | (_,_,0) -> headings_floor
+      | (_,_,k) when k = grid#nz - 1 -> headings_top
+      |_->headings_all
+    ) in
   add_edges {point=departure_point;date=Utils.Date.now ();fuel = -1.};
   let i = ref 0 in
   let max_i = 10000000 in

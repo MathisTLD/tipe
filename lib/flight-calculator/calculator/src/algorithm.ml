@@ -18,7 +18,7 @@ type node = {
   date: float;
   fuel: float;
 }
-let create_node ?(fuel = -1.) point date =
+let create_node ?(fuel = 0.) point date =
   { point;date;fuel }
 type edge_cost = {
   time: float;

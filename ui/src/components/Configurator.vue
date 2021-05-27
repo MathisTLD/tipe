@@ -24,7 +24,6 @@
                 item-text="name"
                 item-value="id"
                 hide-details
-                return-object
                 required
               />
             </v-col>
@@ -157,7 +156,10 @@ export default {
     return {
       dialog: false,
       waiting: false,
-      algorithms: [{ id: "dijkstra", name: "Dijkstra" }],
+      algorithms: [
+        { id: "dijkstra", name: "Dijkstra" },
+        { id: "a*", name: "A*" }
+      ],
       showColorPicker: false,
       // options
       algorithm: "dijkstra",
@@ -192,12 +194,21 @@ export default {
       const {
         arrival,
         departure,
+        algorithm,
         precision,
         directions,
         aircraft,
         weather
       } = this;
-      return { arrival, departure, precision, directions, aircraft, weather };
+      return {
+        arrival,
+        departure,
+        algorithm,
+        precision,
+        directions,
+        aircraft,
+        weather
+      };
     }
   },
   created() {
@@ -226,7 +237,7 @@ export default {
           this.$progress.message = "got error"; // TODO: tell more about the failure
           setTimeout(() => {
             this.$progress.close();
-          }, 1000);
+          }, 3000);
         });
     },
     autoPrecision() {

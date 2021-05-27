@@ -72,7 +72,7 @@ let load_aircrafts () =
 load_aircrafts ();;
 
 
-type cost = {
+type move_cost = {
   time: float;
   fuel: float;
 }
@@ -81,16 +81,18 @@ class aircraft  model =
   object (self)
     val props = Hashtbl.find aircrafts model
     (* inspired by https://www.eucass.eu/doi/EUCASS2017-254.pdf *)
-    method get_speed ?(use_weather=false) (tas: float) (date: float) (loc: location) (bearing: float) =
-      let wind = if use_weather then get_wind date  loc else (0.,0.) in
+    method get_speed (date: float option) (tas: float)  (loc: location) (bearing: float) =
+      let wind = match date with
+        | Some date -> get_wind date  loc
+        | None -> (0.,0.) in
       let cape = (Float.sin bearing, Float.cos bearing) in
       let w_a = prod_scal wind cape in (* along-track wind *)
       let w_x = prod_scal wind (rot cape) in (* cross-track wind *)
       (sqrt ((tas *. tas) -. (w_x *. w_x))) +. w_a
-    method get_cost ?(use_weather=false) (date: float) (loc1: location) (loc2: location)  =
+    method get_move_cost ?(date = None) (loc1: location) (loc2: location)  =
       let phase = (if loc1.alt = loc2.alt then props.performances.cruise else if loc1.alt < loc2.alt then props.performances.climb else props.performances.descent) in
       let bearing = Geo.bearing loc1 loc2 in
-      let speed = self#get_speed ~use_weather:use_weather phase.speed date loc1 bearing in (* FIXME: should get speed at point between loc1 and loc2 *)
+      let speed = self#get_speed date phase.speed loc1 bearing in (* FIXME: should get speed at point between loc1 and loc2 *)
       let distance = Geo.distance loc1 loc2 in
       let time = distance /. speed in
       let fuel = phase.fuelFlow *. time in

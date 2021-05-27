@@ -7,6 +7,7 @@ type options = {
   directions : int;
   weather: bool;
   aircraft: string;
+  algorithm: string;
 } [@@deriving yojson]
 
 let options_from_string str =
@@ -48,18 +49,23 @@ type results = {
   time: int; (* time in ms *)
 } [@@deriving yojson_of]
 
-
 module Heap = Pairing_heap
 
-let dijkstra options =
-  print_endline "running dijkstra";
+let run options =
+  let open Printf in
+  let open Utils in
+  "Options:" |> Output.verbose;
+  Printf.sprintf "- departure: " ^ (location_to_string options.departure) |> Output.verbose;
+  Printf.sprintf "- arrival: " ^ (location_to_string options.arrival) |> Output.verbose;
+  Printf.sprintf "- algorithm: %s" options.algorithm |> Output.verbose;
+  Printf.sprintf "- precision: %d" options.precision |> Output.verbose;
+  let time_start = Utils.Date.now () in
   let aircraft = new Aircraft.aircraft options.aircraft in
   (* FIXME: add altitudes that corresponds to airecraft's specs *)
   let grid = new grid ~altitudes:[|0.;10000.|] options.precision in
   let departure_point = grid#get_closest options.departure in
   let arrival_point = grid#get_closest options.arrival in
-  let compare_edges ({nodes=(_,a)}:edge) ({nodes=(_,b)}:edge) = compare a.date b.date in
-  let queue = Heap.create ~cmp:compare_edges () in
+  let queue = Heap.create ~cmp:(fun (a,_) (b,_) -> compare a b) () in
   let queue_cache = Hashtbl.create (grid#ny*grid#nx/2) in
   let headings_horizontal = Geo.gen_headings options.directions in
   let headings_up = List.map (fun heading -> Up::heading) headings_horizontal in
@@ -67,11 +73,21 @@ let dijkstra options =
   let headings_top = headings_horizontal @ headings_down in
   let headings_floor = headings_up in
   let headings_all = headings_horizontal @ headings_up @ headings_down in
+  let calculate_distance = match options.algorithm with
+    | a when a = "dijkstra" -> fun edge -> (snd edge.nodes).date
+    | a when a = "a*" -> (
+        let arrival_loc = grid#location_of_point arrival_point in
+        fun edge -> (
+            let node = (snd edge.nodes) in
+            (* we add estimated time to arrival (by ignoring wind) to actual date when we will reach that node *)
+            node.date +. (aircraft#get_move_cost (grid#location_of_point node.point) arrival_loc).time
+          ))
+    | a -> failwith (Printf.sprintf "unknown algorithm %s" a)  in
   let create_edge (node_from: node) heading =
     let point_to = grid#resolve_next_point node_from.point heading in
     let loc_from = grid#location_of_point node_from.point in
     let loc_to = grid#location_of_point point_to in
-    let {time;fuel}: Aircraft.cost = aircraft#get_cost ~use_weather:options.weather node_from.date loc_from loc_to in
+    let {time;fuel}: Aircraft.move_cost = if options.weather then aircraft#get_move_cost ~date:(Some node_from.date) loc_from loc_to else aircraft#get_move_cost loc_from loc_to in
     let node_to = {
       point=point_to;
       date=node_from.date +. time;
@@ -82,17 +98,18 @@ let dijkstra options =
     List.iter (fun heading -> (
           let edge = create_edge node heading in
           let arrival_point = (snd edge.nodes).point in
-          (* TODO: optimize insertions to limit queue size *)
-          (* see https://github.com/janestreet/core_kernel/blob/master/pairing_heap/src/pairing_heap.mli *)
+          (* optimize insertions to limit queue size *)
+          (* for Heap docs see https://github.com/janestreet/core_kernel/blob/master/pairing_heap/src/pairing_heap.mli *)
           let cached = Hashtbl.find_opt queue_cache arrival_point in
+          let distance = calculate_distance edge in (* distance represents a time here *)
           if(Option.is_none cached) then (
-            let new_token = Heap.add_removable queue edge in
-            Hashtbl.add queue_cache arrival_point (new_token,edge);
+            let new_token = Heap.add_removable queue (distance, edge) in
+            Hashtbl.add queue_cache arrival_point (new_token, distance, edge);
           ) else (
-            let (prev_token,prev_edge) = Option.get cached in
-            if(compare_edges edge prev_edge < 0) then (
-              let new_token = Heap.update queue prev_token edge in
-              Hashtbl.replace queue_cache arrival_point (new_token,edge)
+            let (prev_token,prev_distance,prev_edge) = Option.get cached in
+            if(distance < prev_distance) then (
+              let new_token = Heap.update queue prev_token (distance, edge) in
+              Hashtbl.replace queue_cache arrival_point (new_token, distance, edge)
             )
             (* else do nothing and ignore current edge *)
           )
@@ -114,7 +131,7 @@ let dijkstra options =
     else (
       i := !i + 1;
       if(!i mod 1000 = 0) then print_endline (Printf.sprintf "%d iteration, %d nodes processed" !i (Hashtbl.length seen));
-      let edge = Heap.pop_exn queue in
+      let (_,edge) = Heap.pop_exn queue in
       let node = snd edge.nodes in
       if (Hashtbl.mem seen node.point) then ()
       else (
@@ -140,18 +157,6 @@ let dijkstra options =
     | _ -> failwith "please provide a node" in
   let path = get_path [fst (Hashtbl.find seen arrival_point)] |> List.map (fun node -> step_of_node grid node) in
   let graph = Hashtbl.fold (fun _ (node,_) acc -> node::acc) seen [] |> List.map (fun node -> step_of_node grid node) in
-  (path,graph)
-
-
-let run options =
-  let open Printf in
-  let open Utils in
-  "Options:" |> Output.verbose;
-  Printf.sprintf "- departure: " ^ (location_to_string options.departure) |> Output.verbose;
-  Printf.sprintf "- arrival: " ^ (location_to_string options.arrival) |> Output.verbose;
-  Printf.sprintf "- precision: %d" options.precision |> Output.verbose;
-  let time_start = Utils.Date.now () in
-  let (path,graph) = dijkstra options in
   let time = ((Utils.Date.now ()) -. time_start) *. 1000. |> Float.round |> Float.to_int in
   let results = {options;graph;path;time} in
   sprintf "done in %dms" results.time |> Output.verbose;

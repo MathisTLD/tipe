@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "campbell start --dev",
-    "start": "campbell start --prod"
+    "start": "campbell start --prod",
+    "build": "campbell build"
   },
   "author": "MathisTLD",
   "license": "ISC",

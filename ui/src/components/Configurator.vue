@@ -50,11 +50,16 @@
           <v-subheader>Display</v-subheader>
           <v-divider class="mb-4" />
           <v-row>
-            <v-col cols="12">
-              <span class="v-label mr-3">Color</span>
+            <v-col cols="4">
               <v-dialog v-model="showColorPicker" width="225px">
                 <template v-slot:activator="{ on }">
-                  <v-btn fab x-small :color="color" v-on="on" />
+                  <v-btn
+                    fab
+                    x-small
+                    :color="color"
+                    v-on="on"
+                    class="v-input--selection-controls"
+                  />
                 </template>
                 <v-color-picker
                   light
@@ -62,6 +67,12 @@
                   v-model="color"
                 ></v-color-picker>
               </v-dialog>
+            </v-col>
+            <v-col cols="4">
+              <v-switch inset v-model="showCard" label="Show Card" />
+            </v-col>
+            <v-col cols="4">
+              <v-switch inset v-model="showGrid" label="Show Grid" />
             </v-col>
           </v-row>
         </v-container>
@@ -169,7 +180,10 @@ export default {
       directions: 6,
       aircraft: null, // automatically set on creation
       weather: true,
-      color: getColor()
+      // display options
+      color: getColor(),
+      showCard: true,
+      showGrid: false
     };
   },
   watch: {
@@ -225,7 +239,9 @@ export default {
           const plan = res.data;
           const options = {
             ...this.options,
-            color: this.color
+            color: this.color,
+            showCard: this.showCard,
+            showGrid: this.showGrid
           };
           this.$progress.close();
           this.$map.display({ plan, options });

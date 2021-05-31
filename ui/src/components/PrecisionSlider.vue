@@ -13,13 +13,17 @@
 // let dBetweenPoles = 20003.9315;
 
 const precisions = [
-  { label: "200km", q: 100 },
-  { label: "100km", q: 200 },
-  { label: "50km", q: 400 },
-  { label: "25km", q: 800 },
+  { label: "200km", q: 90 },
+  { label: "100km", q: 180 },
+  { label: "50km", q: 360 },
+  { label: "25km", q: 720 },
   { label: "10km", q: 2000 },
   { label: "5km", q: 4000 }
 ];
+
+// precisions.forEach(p =>
+//   console.log(p.label, (Math.PI / p.q) * 6371, 180 / p.q)
+// );
 
 export default {
   props: {

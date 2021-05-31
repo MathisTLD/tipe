@@ -17,7 +17,7 @@ function setView(plan) {
 }
 
 // TODO: make heatmaps work or delete them
-window.h337 = require("../../vendors/heatmap.js");
+// window.h337 = require("../../vendors/heatmap.js");
 // require("cesium-heatmap");
 // const CesiumHeatmap = window.CesiumHeatmap;
 
@@ -25,10 +25,17 @@ function display(results) {
   const { plan, options } = results;
   this.results.push(results);
   console.log(results);
+  if (options.showGrid) {
+    this.showGrid(
+      options.precision,
+      10 - this.results.length,
+      Cesium.Color.fromCssColorString(options.color)
+    );
+  }
   setView.call(this, plan);
   const coordinates = plan.path
     .map(({ loc }) => {
-      return [loc.lon, loc.lat, loc.alt];
+      return [loc.lon, loc.lat, 0 /* loc.alt */]; // visual effect isn't that good when showing altitude
     })
     .flat();
   this.viewer.entities.add({
@@ -152,9 +159,102 @@ function display(results) {
 //   displayGraph();
 // }
 
+function showGrid(
+  n,
+  altitude = 0,
+  material = Cesium.Material.ColorType,
+  width = 1,
+  quarter = false
+) {
+  const d = 180 / n;
+  const mi = quarter ? n / 2 + 1 : n;
+  for (let i = 1; i < mi; i++) {
+    this.parallel(90 - i * d, altitude, material, width, quarter);
+  }
+  const mj = quarter ? n / 2 + 1 : 2 * n;
+  for (let j = 0; j < mj; j++) {
+    this.meridian(j * d, altitude, material, width, quarter);
+  }
+}
+
+function meridian(
+  longitude,
+  altitude = 0,
+  material = Cesium.Material.ColorType,
+  width = 2,
+  half = false
+) {
+  const name = "Meridian " + longitude;
+  return this.viewer.entities.add({
+    name: name,
+    polyline: {
+      positions: Cesium.Cartesian3.fromDegreesArrayHeights(
+        !half
+          ? [
+              longitude,
+              90,
+              altitude,
+              longitude,
+              0,
+              altitude,
+              longitude,
+              -90,
+              altitude
+            ]
+          : [longitude, 90, altitude, longitude, 0, altitude]
+      ),
+      arcType: Cesium.ArcType.RHUMB,
+      material,
+      width
+    }
+  });
+}
+
+function parallel(
+  latitude,
+  altitude = 0,
+  material = Cesium.Material.ColorType,
+  width = 2,
+  quarter = 0
+) {
+  const name = "Parallel " + latitude;
+  return this.viewer.entities.add({
+    name: name,
+    polyline: {
+      positions: Cesium.Cartesian3.fromDegreesArrayHeights(
+        !quarter
+          ? [
+              -180,
+              latitude,
+              altitude,
+              -90,
+              latitude,
+              altitude,
+              0,
+              latitude,
+              altitude,
+              90,
+              latitude,
+              altitude,
+              180,
+              latitude,
+              altitude
+            ]
+          : [0, latitude, altitude, 90, latitude, altitude]
+      ),
+      arcType: Cesium.ArcType.RHUMB,
+      material,
+      width
+    }
+  });
+}
+
 export default {
   methods: {
     cleanup,
-    display
+    display,
+    meridian,
+    parallel,
+    showGrid
   }
 };

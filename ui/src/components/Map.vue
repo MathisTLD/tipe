@@ -8,6 +8,7 @@
         v-for="(result, i) in results"
         :key="i"
         :results="result"
+        v-show="result.options.showCard"
       />
     </div>
   </div>
@@ -50,10 +51,12 @@ export default {
     }
   },
   async mounted() {
-    // show the loader
-    this.$progress.message = "Preparing ...";
-    this.$progress.progression.message = "loading the globe";
-    this.$progress.open();
+    setTimeout(() => {
+      // show the loader
+      this.$progress.message = "Preparing ...";
+      this.$progress.progression.message = "loading the globe";
+      this.$progress.open();
+    }, 50);
 
     this.viewer = new Cesium.Viewer("cesium-container", {
       // UI : hide useless things
@@ -95,6 +98,9 @@ export default {
     );
 
     if (this.viewer.scene._mode === 3) this.showWind();
+    // for (var i = 0; i < 1; i++) {
+    //   this.showGrid(18, i * 500000, Cesium.Material.ColorType, 1, i > 0);
+    // }
   },
   beforeDestroy() {
     this.hideWind(); // prevents errors on hot relaod

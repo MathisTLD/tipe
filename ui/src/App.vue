@@ -6,8 +6,13 @@
       {{ version }}
     </v-app-bar> -->
 
-    <v-main>
-      <v-container fluid class="fill-height ma-0 pa-0">
+    <v-main @drop.prevent="onFileDrop" @dragover.prevent>
+      <v-container
+        fluid
+        class="fill-height ma-0 pa-0"
+        @drop.prevent="onFileDrop"
+        @dragover.prevent
+      >
         <Map ref="map" />
         <Configurator ref="configurator" />
         <Progress ref="progress" />
@@ -49,25 +54,65 @@ export default {
       this.hideActions = !this.hideActions;
       document.body.style.cursor = this.hideActions ? "none" : null;
     });
+    hotkeys("alt+s", event => {
+      event.preventDefault();
+      this.exportResults();
+    });
+  },
+  computed: {
+    $map() {
+      return this.$refs.map;
+    }
   },
   methods: {
-    async saveScreenShot() {
-      function saveCanvas(
-        canvas,
-        filename = `capture-${new Date().toISOString()}.jpg`
-      ) {
-        const a = document.createElement("a");
-        const url = canvas.toDataURL("image/jpg");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function() {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }, 0);
+    onDragOver(ev) {
+      ev.preventDefault();
+    },
+    async onFileDrop(ev) {
+      if (ev.dataTransfer && ev.dataTransfer.files) {
+        for (let file of ev.dataTransfer.files) {
+          if (file.type === "application/json") {
+            const json = await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                resolve(reader.result);
+              };
+              reader.readAsText(file);
+            });
+            const obj = JSON.parse(json);
+            if (
+              Array.isArray(obj) &&
+              obj.every(x => "plan" in x && "options" in x)
+            ) {
+              // file is results
+              this.importResults(obj);
+            } else {
+              console.error("unsupported imported object", obj);
+            }
+          }
+        }
       }
-
+    },
+    async saveFile(dataUrl, filename) {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(dataUrl);
+      }, 0);
+    },
+    async exportResults() {
+      const json = JSON.stringify(this.$refs.map.results, null, 2);
+      const blob = new Blob([json], { type: "text/plain" });
+      await this.saveFile(URL.createObjectURL(blob), "results.json");
+    },
+    async importResults(results) {
+      results.forEach(res => this.$map.display(res));
+    },
+    async saveScreenShot() {
       const map = this.$refs.map;
       async function cloneCanvas(oldCanvas, scale = 1) {
         //create a new canvas
@@ -106,7 +151,12 @@ export default {
             return true;
           } else return false;
         }
-      }).then(saveCanvas);
+      }).then(canvas => {
+        this.saveFile(
+          canvas.toDataURL("image/jpg"),
+          `capture-${new Date().toISOString()}.jpg`
+        );
+      });
     }
   }
 };

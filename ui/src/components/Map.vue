@@ -44,6 +44,11 @@ export default {
       return this.$app.$refs.progress;
     }
   },
+  watch: {
+    "$app.hideActions"(hide) {
+      this.viewer.sceneModePicker.container.style.display = hide ? "none" : "";
+    }
+  },
   async mounted() {
     // show the loader
     this.$progress.message = "Preparing ...";
@@ -109,6 +114,34 @@ export default {
         delete this.wind3D;
         this.wind = false;
       }
+    },
+    getScreenshot() {
+      return new Promise(resolve => {
+        const targetResolutionScale = 1.0; // for screenshots with higher resolution set to 2.0 or even 3.0
+        const timeout = 0; // in ms
+        const viewer = this.viewer;
+        const scene = viewer.scene;
+        const prepareScreenshot = function() {
+          viewer.resolutionScale = targetResolutionScale;
+          scene.preRender.removeEventListener(prepareScreenshot);
+          // take snapshot after defined timeout to allow scene update (ie. loading data)
+          setTimeout(function() {
+            scene.postRender.addEventListener(takeScreenshot);
+          }, timeout);
+        };
+
+        const takeScreenshot = function() {
+          scene.postRender.removeEventListener(takeScreenshot);
+          const canvas = scene.canvas;
+          canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            resolve(url);
+            // reset resolutionScale
+            viewer.resolutionScale = 1.0;
+          });
+        };
+        scene.preRender.addEventListener(prepareScreenshot);
+      });
     }
   }
 };

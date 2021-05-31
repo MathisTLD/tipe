@@ -12,6 +12,8 @@
     "cesium": "^1.79.1",
     "cesium-heatmap": "0.0.4",
     "core-js": "^3.6.5",
+    "hotkeys-js": "^3.8.5",
+    "html2canvas": "^1.0.0-rc.7",
     "lodash": "^4.17.21",
     "spectorjs": "^0.9.22",
     "vue": "^2.6.11",

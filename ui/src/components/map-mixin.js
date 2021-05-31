@@ -18,8 +18,8 @@ function setView(plan) {
 
 // TODO: make heatmaps work or delete them
 window.h337 = require("../../vendors/heatmap.js");
-require("cesium-heatmap");
-const CesiumHeatmap = window.CesiumHeatmap;
+// require("cesium-heatmap");
+// const CesiumHeatmap = window.CesiumHeatmap;
 
 function display(results) {
   const { plan, options } = results;
@@ -38,31 +38,31 @@ function display(results) {
       width: 3
     }
   });
-  if (this.__heatmap && this.__heatmap.destroy) this.__heatmap.destroy();
-  this.__heatmap = CesiumHeatmap.create(
-    this.viewer, // your cesium viewer
-    {
-      west: 180,
-      east: -180,
-      south: -90,
-      north: 90
-    }, // bounds for heatmap layer
-    {
-      // heatmap.js options go here
-      // maxOpacity: 0.3
-    }
-  );
-  this.__heatmap.setWGS84Data(
-    plan.path[0].date,
-    plan.path[plan.path.length - 1].date,
-    plan.graph
-      .filter(() => Math.random() < 0.1)
-      .map(({ loc, date }) => ({
-        x: loc.lon,
-        y: loc.lat,
-        value: date
-      }))
-  );
+  // if (this.__heatmap && this.__heatmap.destroy) this.__heatmap.destroy();
+  // this.__heatmap = CesiumHeatmap.create(
+  //   this.viewer, // your cesium viewer
+  //   {
+  //     west: 180,
+  //     east: -180,
+  //     south: -90,
+  //     north: 90
+  //   }, // bounds for heatmap layer
+  //   {
+  //     // heatmap.js options go here
+  //     // maxOpacity: 0.3
+  //   }
+  // );
+  // this.__heatmap.setWGS84Data(
+  //   plan.path[0].date,
+  //   plan.path[plan.path.length - 1].date,
+  //   plan.graph
+  //     .filter(() => Math.random() < 0.1)
+  //     .map(({ loc, date }) => ({
+  //       x: loc.lon,
+  //       y: loc.lat,
+  //       value: date
+  //     }))
+  // );
 }
 
 // function displayGraph(itinerary) {

@@ -18,7 +18,7 @@
           <v-divider></v-divider>
           <v-list-item>
             <v-list-item-subtitle>
-              Dijkstra
+              {{ algorithm }}
             </v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
@@ -82,6 +82,10 @@ export default {
       const path = this.results.plan.path;
       const consumption = Math.abs(path[path.length - 1].fuel - path[0].fuel); // in m3
       return `${(consumption * 1000).toFixed(0)} L`;
+    },
+    algorithm() {
+      const upperFirst = str => str.charAt(0).toUpperCase() + str.slice(1);
+      return upperFirst(this.results.options.algorithm);
     },
     fields() {
       return [

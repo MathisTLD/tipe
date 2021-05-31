@@ -132,8 +132,8 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
     method id_of_point ((i,j,k): point) =
       k*nx*ny + i*ny + j
     method location_of_point ((i,j,k): point) =
-      let lat = deg_to_lat (180. *. (Float.of_int i) /. (Float.of_int ny)) in
-      let lon = deg_to_lon (360. *. (Float.of_int j) /. (Float.of_int nx)) in
+      let lat = deg_to_lat (increment *. (Float.of_int i)) in
+      let lon = deg_to_lon (increment *. (Float.of_int j)) in
       let alt = altitudes.(k) in
       {lat;lon;alt}
     method distance_between_points (a:point) (b:point) =

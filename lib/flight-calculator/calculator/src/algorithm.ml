@@ -121,7 +121,7 @@ let run options =
       | (_,_,k) when k = grid#nz - 1 -> headings_top
       |_->headings_all
     ) in
-  add_edges {point=departure_point;date=Utils.Date.now ();fuel = -1.};
+  add_edges {point=departure_point;date=Utils.Date.now ();fuel = 0.};
   let i = ref 0 in
   let max_i = 10000000 in
   let found = ref false in

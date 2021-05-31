@@ -1,4 +1,5 @@
 open Geo
+open Utils
 
 type options = {
   departure : location;
@@ -16,18 +17,15 @@ let options_from_string str =
 
 type node = {
   point: point;
-  date: float;
+  date: Date.t;
   fuel: float;
 }
 let create_node ?(fuel = 0.) point date =
   { point;date;fuel }
-type edge_cost = {
-  time: float;
-  fuel: float;
-}
+
 type edge = {
   nodes: node * node;
-  cost: edge_cost;
+  cost: Aircraft.move_cost;
 }
 
 type step = {
@@ -36,10 +34,11 @@ type step = {
   date: int;
 } [@@deriving yojson_of]
 let step_of_node grid node =
+  let open Date in
   {
     loc=grid#location_of_point node.point;
     fuel=node.fuel;
-    date=Float.round (node.date *. 1000.) |> Float.to_int
+    date=Float.round (to_span_since_epoch node.date |> Span.to_ms) |> Float.to_int
   }
 
 type results = {
@@ -78,9 +77,10 @@ let run options =
     | a when a = "a*" -> (
         let arrival_loc = grid#location_of_point arrival_point in
         fun edge -> (
+            let open Date in
             let node = (snd edge.nodes) in
             (* we add estimated time to arrival (by ignoring wind) to actual date when we will reach that node *)
-            node.date +. (aircraft#get_move_cost (grid#location_of_point node.point) arrival_loc).time
+            add node.date (aircraft#get_move_cost (grid#location_of_point node.point) arrival_loc).time
           ))
     | a -> failwith (Printf.sprintf "unknown algorithm %s" a)  in
   let create_edge (node_from: node) heading =
@@ -90,7 +90,7 @@ let run options =
     let {time;fuel}: Aircraft.move_cost = if options.weather then aircraft#get_move_cost ~date:(Some node_from.date) loc_from loc_to else aircraft#get_move_cost loc_from loc_to in
     let node_to = {
       point=point_to;
-      date=node_from.date +. time;
+      date= Date.add node_from.date time;
       fuel=node_from.fuel -. fuel;
     } in
     {nodes=(node_from,node_to);cost={time;fuel}} in
@@ -157,7 +157,7 @@ let run options =
     | _ -> failwith "please provide a node" in
   let path = get_path [fst (Hashtbl.find seen arrival_point)] |> List.map (fun node -> step_of_node grid node) in
   let graph = Hashtbl.fold (fun _ (node,_) acc -> node::acc) seen [] |> List.map (fun node -> step_of_node grid node) in
-  let time = ((Utils.Date.now ()) -. time_start) *. 1000. |> Float.round |> Float.to_int in
+  let time = (Date.diff (Utils.Date.now ()) time_start) |> Date.Span.to_ms |> Float.round |> Float.to_int in
   let results = {options;graph;path;time} in
   sprintf "done in %dms" results.time |> Output.verbose;
   sprintf "processed %d nodes" (List.length results.graph) |> Output.verbose;

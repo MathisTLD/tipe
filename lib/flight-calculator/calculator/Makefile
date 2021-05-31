@@ -5,7 +5,7 @@ BUILD_DIR = _build
 
 modules = utils geo wind aircraft algorithm index
 modules_cmx = $(foreach module,$(modules),$(BUILD_DIR)/$(module).cmx)
-pkg = core_kernel.pairing_heap str yojson ppx_yojson_conv grib
+pkg = core_kernel core_kernel.pairing_heap str yojson ppx_yojson_conv grib
 
 comma:= ,
 empty:=

@@ -12,6 +12,14 @@ type location_2D = {
   lon : float;
 }
 
+type 'a surrounding ={
+  top_right: 'a;
+  top_left: 'a;
+  bottom_left: 'a;
+  bottom_right: 'a
+}
+
+
 let location_to_string ?(format="dd") (loc: location) =
   let deg_to_dms dd =
     let d = Float.floor dd in
@@ -115,10 +123,12 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
     val ny = n+1 (* n equal angle segments for one meridian so n+1 points (including one for each pole) *)
     val nx = 2*n (* 2n equal angle segments for one parallel so 2n points as lat -180 = lat 180 *)
     val nz = Array.length altitudes
+    val increment = 180. /. (Float.of_int n)
     (* then 0 <= i <= n and 0 <= j <= 2n-1 *)
     method nx = nx
     method ny = ny
     method nz = nz
+    method increment = increment
     method id_of_point ((i,j,k): point) =
       k*nx*ny + i*ny + j
     method location_of_point ((i,j,k): point) =
@@ -129,9 +139,14 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
     method distance_between_points (a:point) (b:point) =
       (* consider adding caching *)
       distance (self#location_of_point a) (self#location_of_point b)
+    method get_float_coordinates_2D ({lat;lon}: location_2D) =
+      let i_float = (lat_to_deg lat) /. increment in
+      let j_float = (lon_to_deg lon) /. increment in
+      (i_float,j_float)
     method get_closest (loc: location) =
-      let i = Float.to_int (Float.round ((lat_to_deg loc.lat) /. 180. *. float_of_int ny)) in
-      let j = Float.to_int (Float.round ((lon_to_deg loc.lon) /. 360. *. float_of_int nx)) in
+      let (i_float,j_float) = self#get_float_coordinates_2D {lat=loc.lat;lon=loc.lon} in
+      let i = Float.to_int (Float.round i_float) in
+      let j = Float.to_int (Float.round j_float) mod nx in
       let (_,_,k) = Array.fold_left
           (fun (i,md,mi) h -> ( let d = abs_float (loc.alt -. h) in
                                 if mi < 0 then (i+1,d,i)
@@ -139,14 +154,17 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
                                 else  (i+1,md,mi)   ))
           (0,0.,-1) altitudes in
       (i,j,k)
-    method get_around_2D ({lat;lon}: location_2D) =
-      let i_float = (lat_to_deg lat) /. 180. in
-      let j_float = (lon_to_deg lon) /. 180. in
-      let top_left = (Float.to_int (Float.floor i_float),Float.to_int (Float.floor j_float)) in
-      let top_right = (Float.to_int (Float.floor i_float) mod nx,Float.to_int (Float.ceil j_float)) in
-      let bottom_left = (Float.to_int (Float.ceil i_float),Float.to_int (Float.floor j_float)) in
-      let bottom_right = (Float.to_int (Float.ceil i_float) mod nx,Float.to_int (Float.ceil j_float)) in
-      [|top_right;top_left;bottom_left;bottom_right|]
+    method get_surrounding_2D ({lat;lon}: location_2D) =
+      let (i_float,j_float) = self#get_float_coordinates_2D {lat;lon} in
+      let i1 = Float.to_int (Float.floor i_float) in
+      let i2 = Float.to_int (Float.ceil i_float) in
+      let j1 = Float.to_int (Float.floor j_float) in
+      let j2 = Float.to_int (Float.floor j_float) mod nx in
+      let top_left = (i1,j1) in
+      let top_right = (i1,j2) in
+      let bottom_left = (i2,j1) in
+      let bottom_right = (i2,j2) in
+      {top_right;top_left;bottom_left;bottom_right}
     method resolve_next_point (point: point) (heading: heading): point =
       let get_opposite ((i,j,k): point): point =
         (i,(j+(nx/2)) mod nx,k) in

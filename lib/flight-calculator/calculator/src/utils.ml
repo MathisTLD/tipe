@@ -1,13 +1,12 @@
 module Date = struct
-  let to_yyyymmdd t =
-    let tm = Unix.gmtime t in
-    Printf.sprintf "%04d%02d%02d" (tm.tm_year+1900) (tm.tm_mon+1) tm.tm_mday
+  include Core_kernel.Time
+  (* FIXME: ensure time is UTC *)
+  let to_iso_string t =
+    to_string_iso8601_basic ~zone:Zone.utc t
 
-  let get_hours t =
-    (Unix.gmtime t).tm_hour
-
-  let now () =
-    Unix.gettimeofday ()
+  let of_iso_string iso =
+    let time = of_string_gen ~default_zone:(fun () -> Zone.utc) ~find_zone:(fun str -> Zone.utc) iso in
+    time
 end
 
 module Output = struct

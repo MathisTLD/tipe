@@ -1,4 +1,5 @@
 open Geo
+open Utils
 
 (* weather utils *)
 let p0 = 1013.25 (* pressure at altitude 0m in mb *)
@@ -11,6 +12,14 @@ let pressure_to_altitude p =
   (1. -. (p /. p0) ** k2) *. k1
 let altitude_to_pressure a =
   ((((-. a) /. k1) -. 1.) ** (1./.k2)) *. p0
+
+let linear_interpolation val1 val2 u =
+  (* FIXME: remove me *)
+  if(not (0. <= u && u <= 1.)) then failwith (Printf.sprintf "u: %f not in [0,1]" u);
+  (1. -. u) *. val1 +. u *. val2
+
+let linear_interpolation_vect v1 v2 u =
+  (linear_interpolation (fst v1) (fst v2) u, linear_interpolation (snd v1) (snd v2) u)
 
 (* interpolation utils *)
 (* arr should be a sorted array (asc) *)
@@ -28,14 +37,26 @@ let index_sandwich (cmp: 'a -> 'b -> int) (arr: ('a array)) (x: 'b): int * int =
       done;
       if(!i = n - 1) then (n-1,n-1)
       else if cmp arr.(!i) x = 0 then (!i,!i)
-      else (!i, !i + 1)
+      else (!i - 1, !i)
     )
   )
 
 
-let get_date_id t =
-  Printf.sprintf "%sT%02d" (Utils.Date.to_yyyymmdd t) (Utils.Date.get_hours t)
+let date_id_of_time t =
+  let open Utils.Date in
+  let iso = to_iso_string t in
+  Scanf.sscanf (String.sub iso 0 13) "%u-%u-%uT%u" (fun y m d h -> Printf.sprintf "%04u%02u%02uT%02u" y m d h)
 
+let time_of_date_id id =
+  let y = String.sub id 0 4 in
+  let m = String.sub id 4 2 in
+  let d = String.sub id 6 2 in
+  let h = String.sub id 9 2 in
+  let open Utils.Date in
+  let iso = Printf.sprintf "%s-%s-%sT%s:00:00Z" y m d h in
+  of_iso_string iso
+
+(* used for debug *)
 let print_handle handle =
   let open Grib in
   let print_key key =
@@ -89,14 +110,22 @@ class wind_component handle =
     method grib_handle = handle
 
     method get_value {lat;lon} =
-      let around = grid#get_around_2D ({lat;lon}) in
-      Array.map (fun (i,j) -> (
-            let point = (i,j,0) in
-            (* TODO: remplacer par de l'interpolation bilinéaire *)
-            (* let d = distance loc (grid#location_of_point point) in *)
-            values.((grid#id_of_point point))
-          )
-        ) around |> Array.fold_left (fun m x -> m+.(x/.4.)) 0.
+      (* TODO: test interpolation *)
+      let points_2D = grid#get_surrounding_2D ({lat;lon}) in
+      let (i,j) = grid#get_float_coordinates_2D {lat;lon} in
+      let u = i -. Float.of_int (fst points_2D.top_left) in
+      let v = j -. Float.of_int (snd points_2D.top_left) in
+      let values = (
+        let {top_right;top_left;bottom_left;bottom_right} = points_2D in
+        let values = [|top_right;top_left;bottom_left;bottom_right|] |> Array.map (fun (i,j) -> (
+              values.((grid#id_of_point (i,j,0)))
+            )
+          ) in
+        {top_right=values.(0);top_left=values.(1);bottom_left=values.(2);bottom_right=values.(3)}
+      ) in
+      let value_left = linear_interpolation values.top_left values.bottom_left u  in
+      let value_right = linear_interpolation values.top_right values.bottom_right u  in
+      linear_interpolation value_left value_right v
   end
 
 class wind_level (u: wind_component) (v:wind_component ) =
@@ -123,6 +152,7 @@ class wind_level (u: wind_component) (v:wind_component ) =
 
 class wind_date (id: string) =
   let open Utils in
+  let date = time_of_date_id id in
   let day = String.sub id 0 8 in
   let hours = String.sub id 9 2 in
   let dir = "data/weather/wind/"^day in
@@ -164,18 +194,24 @@ class wind_date (id: string) =
                |> Array.of_list in
   object (self)
     val layers = layers
+    val date = date
     method layers = layers
+    method date = date
     method get_value loc =
-      (* FIXME: should use the appropriate level_layer *)
       let (i1,i2) = index_sandwich (fun (layer: wind_level) (altitude: float) -> compare layer#altitude altitude) layers loc.alt in
       let loc2D = {lat=loc.lat;lon=loc.lon} in
       if i1 = i2 then layers.(i1)#get_value loc2D
       else (
         (* we have to interpolate value *)
+        let layer1 = layers.(i1) in
+        let layer2 = layers.(i2) in
+        (* FIXME: remove me *)
+        if(not (layer1#altitude < loc.alt && loc.alt < layer2#altitude)) then failwith (Printf.sprintf "invalid layer altitudes: %f not in [%f,%f]" loc.alt layer1#altitude layer2#altitude);
         let v1 = layers.(i1)#get_value loc2D in
         let v2 = layers.(i2)#get_value loc2D in
-        (* FIXME: provide real interpolation and not average value *)
-        ((fst v1 +. fst v2) /. 2.,(snd v1 +. snd v2) /. 2.)
+        (* TODO: is this interpolation method matches phisics reality *)
+        let u = (loc.alt -. layer1#altitude) /. (layer2#altitude -. layer1#altitude) in
+        linear_interpolation_vect v1 v2 u
       )
   end
 
@@ -191,11 +227,15 @@ class wind_data_provider =
           data
         )
       | Some data -> data
-    method get_value (date: float) (loc: location)  : (float * float) =
-      (* FIXME: we should use data for date before and after *)
-      let date_id = get_date_id date in
-      let data = self#get_date_data date_id in
-      data#get_value loc
+    method get_value (date: Date.t)  (loc: location)  : (float * float) =
+      (* TODO: test interpolation *)
+      let open Date in
+      let data1 = self#get_date_data (date_id_of_time date) in (* data just before *)
+      let data2 = self#get_date_data (date_id_of_time (add date (Span.of_sec 3600.))) in (* data just after *)
+      let v1 = data1#get_value loc in
+      let v2 = data2#get_value loc in
+      let u = ((diff date data1#date) |> Span.to_sec) /. ((diff data2#date data1#date) |> Span.to_sec) in
+      linear_interpolation_vect v1 v2 u
   end
 
 let provider = new wind_data_provider

@@ -1,3 +1,3 @@
 S src
 B _build
-PKG core_kernel.pairing_heap str yojson ppx_yojson_conv grib
+PKG core_kernel core_kernel.pairing_heap str yojson ppx_yojson_conv grib

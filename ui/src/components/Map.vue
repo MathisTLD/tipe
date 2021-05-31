@@ -67,12 +67,16 @@ export default {
       creditContainer: "cesium-credit",
       // sceneMode: Cesium.SceneMode.SCENE2D,
       // projection
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-        url: "https://tile.openstreetmap.org/"
-      }),
-      mapProjection: new Cesium.WebMercatorProjection()
+      imageryProvider: new Cesium.MapboxStyleImageryProvider({
+        username: "mathistld",
+        styleId: "ckpd3876k0ar917qpozx60uf0",
+        accessToken:
+          "pk.eyJ1IjoibWF0aGlzdGxkIiwiYSI6ImNrcGQzNDd2cTA1enMyb28xMndhODV4MmoifQ.ViKqvStzsDYsYmH_bmmKxQ",
+        scaleFactor: true,
+        maximumLevel: 5
+      }) // new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/"}),
+      // mapProjection: new Cesium.WebMercatorProjection()
     });
-
     // remove loader when rendered
     setTimeout(
       function() {

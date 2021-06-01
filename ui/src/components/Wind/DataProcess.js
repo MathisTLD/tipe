@@ -5,53 +5,58 @@ import axios from "axios";
 var DataProcess = (function() {
   var data;
 
-  var loadJSON = function(url) {
-    return axios.get(url).then(res => {
-      data = {};
+  var dataFromJson = function(json) {
+    data = {};
 
-      const [u, v] = res.data;
+    const [u, v] = json;
 
-      data.lon = {};
-      data.lon.min = u.longitudeOfFirstGridPointInDegrees;
-      data.lon.max = u.longitudeOfLastGridPointInDegrees;
-      data.lon.array = [];
-      for (var i = 0; i < u.Ni; i++) {
-        data.lon.array.push(data.lon.min + i * u.iDirectionIncrementInDegrees);
-      }
-      data.lon.array = new Float32Array(data.lon.array);
+    data.lon = {};
+    data.lon.min = u.longitudeOfFirstGridPointInDegrees;
+    data.lon.max = u.longitudeOfLastGridPointInDegrees;
+    data.lon.array = [];
+    for (var i = 0; i < u.Ni; i++) {
+      data.lon.array.push(data.lon.min + i * u.iDirectionIncrementInDegrees);
+    }
+    data.lon.array = new Float32Array(data.lon.array);
 
-      data.lat = {};
-      data.lat.min = u.latitudeOfFirstGridPointInDegrees;
-      data.lat.max = u.latitudeOfLastGridPointInDegrees;
-      data.lat.array = [];
-      for (var j = 0; j < u.Nj; j++) {
-        data.lat.array.push(data.lat.min + j * u.jDirectionIncrementInDegrees);
-      }
-      data.lat.array = new Float32Array(data.lat.array);
+    data.lat = {};
+    data.lat.min = u.latitudeOfFirstGridPointInDegrees;
+    data.lat.max = u.latitudeOfLastGridPointInDegrees;
+    data.lat.array = [];
+    for (var j = 0; j < u.Nj; j++) {
+      data.lat.array.push(data.lat.min + j * u.jDirectionIncrementInDegrees);
+    }
+    data.lat.array = new Float32Array(data.lat.array);
 
-      data.lev = {};
-      const lev = (1 - Math.pow(900 / 1013.25, 0.190284)) * 145366.45 * 0.3048; // convert pressure-altitude to latitude in metters
-      data.lev.array = new Float32Array([lev]);
-      data.lev.min = lev;
-      data.lev.max = lev;
+    data.lev = {};
+    const lev = (1 - Math.pow(900 / 1013.25, 0.190284)) * 145366.45 * 0.3048; // convert pressure-altitude to latitude in metters
+    data.lev.array = new Float32Array([lev]);
+    data.lev.min = lev;
+    data.lev.max = lev;
 
-      data.dimensions = {};
-      data.dimensions.lon = data["lon"].array.length;
-      data.dimensions.lat = data["lat"].array.length;
-      data.dimensions.lev = data["lev"].array.length;
+    data.dimensions = {};
+    data.dimensions.lon = data["lon"].array.length;
+    data.dimensions.lat = data["lat"].array.length;
+    data.dimensions.lev = data["lev"].array.length;
 
-      data.U = {};
-      data.U.array = new Float32Array(u.values);
-      data.U.min = u.minimum;
-      data.U.max = u.maximum;
+    data.U = {};
+    data.U.array = new Float32Array(u.values);
+    data.U.min = u.minimum;
+    data.U.max = u.maximum;
 
-      data.V = {};
-      data.V.array = new Float32Array(v.values);
-      data.V.min = v.minimum;
-      data.V.max = v.maximum;
+    data.V = {};
+    data.V.array = new Float32Array(v.values);
+    data.V.min = v.minimum;
+    data.V.max = v.maximum;
 
-      return data;
-    });
+    return data;
+  };
+  var loadJSON = function(src) {
+    if (typeof src === "string") {
+      return axios.get(src).then(res => dataFromJson(res.data));
+    } else if (Array.isArray(src) && src.length === 2) {
+      return dataFromJson(src);
+    } else throw new TypeError(`Unsupported source ${src}`);
   };
   /*
   ### How do particles get colored?
@@ -109,8 +114,8 @@ var DataProcess = (function() {
     data.colorTable.array = colorsArray;
   };
 
-  var loadData = async function() {
-    await loadJSON("/api/weather/wind.json");
+  var loadData = async function(src = "/api/weather/wind.json") {
+    await loadJSON(src);
     loadColorTable();
     return data;
   };

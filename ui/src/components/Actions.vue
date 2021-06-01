@@ -12,7 +12,7 @@
     <v-btn color="secondary" fab @click="clear">
       <v-icon>fa-broom</v-icon>
     </v-btn>
-    <v-btn color="secondary" fab @click="toggleWind" :outlined="!wind">
+    <v-btn color="secondary" fab @click="toggleWindConfigurator">
       <v-icon>fa-wind</v-icon>
     </v-btn>
   </v-speed-dial>
@@ -31,18 +31,14 @@ export default {
     },
     $map() {
       return this.$app.$refs.map;
-    },
-    wind() {
-      return this.$map.wind;
     }
   },
   methods: {
     clear() {
       this.$map.clear();
     },
-    toggleWind() {
-      if (this.wind) this.$map.hideWind();
-      else this.$map.showWind();
+    toggleWindConfigurator() {
+      if (this.$map && this.$map.$wind) this.$map.$wind.toggleConfigurator();
     },
     toggleConfigurator() {
       this.$app.$refs.configurator.toggle();

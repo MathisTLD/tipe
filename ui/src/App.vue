@@ -6,13 +6,8 @@
       {{ version }}
     </v-app-bar> -->
 
-    <v-main @drop.prevent="onFileDrop" @dragover.prevent>
-      <v-container
-        fluid
-        class="fill-height ma-0 pa-0"
-        @drop.prevent="onFileDrop"
-        @dragover.prevent
-      >
+    <v-main>
+      <v-container fluid class="fill-height ma-0 pa-0">
         <Map ref="map" />
         <Configurator ref="configurator" />
         <Progress ref="progress" />
@@ -45,6 +40,47 @@ export default {
     };
   },
   created() {
+    this._ondragover = ev => ev.preventDefault();
+    this._ondrop = async ev => {
+      ev.preventDefault();
+      if (ev.dataTransfer && ev.dataTransfer.files) {
+        for (let file of ev.dataTransfer.files) {
+          if (file.type === "application/json") {
+            const json = await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                resolve(reader.result);
+              };
+              reader.readAsText(file);
+            });
+            const obj = JSON.parse(json);
+            if (
+              Array.isArray(obj) &&
+              obj.every(x => "plan" in x && "options" in x)
+            ) {
+              // file is results
+              this.importResults(obj);
+            } else if (
+              Array.isArray(obj) &&
+              obj.length === 2 &&
+              obj.every(
+                x =>
+                  "latitudeOfFirstGridPointInDegrees" in x &&
+                  x.name.endsWith("wind")
+              )
+            ) {
+              // file is wind data
+              this.$map.$wind.loadData(obj);
+            } else {
+              console.error("unsupported imported object", obj);
+            }
+          }
+        }
+      }
+    };
+    window.addEventListener("dragover", this._ondragover);
+    window.addEventListener("drop", this._ondrop);
+
     hotkeys("alt+p", event => {
       event.preventDefault();
       this.saveScreenShot();
@@ -65,40 +101,16 @@ export default {
       this.exportResults();
     });
   },
+  beforeDestroy() {
+    window.removeEventListener("dragover", this._ondragover);
+    window.removeEventListener("drop", this._ondrop);
+  },
   computed: {
     $map() {
       return this.$refs.map;
     }
   },
   methods: {
-    onDragOver(ev) {
-      ev.preventDefault();
-    },
-    async onFileDrop(ev) {
-      if (ev.dataTransfer && ev.dataTransfer.files) {
-        for (let file of ev.dataTransfer.files) {
-          if (file.type === "application/json") {
-            const json = await new Promise(resolve => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                resolve(reader.result);
-              };
-              reader.readAsText(file);
-            });
-            const obj = JSON.parse(json);
-            if (
-              Array.isArray(obj) &&
-              obj.every(x => "plan" in x && "options" in x)
-            ) {
-              // file is results
-              this.importResults(obj);
-            } else {
-              console.error("unsupported imported object", obj);
-            }
-          }
-        }
-      }
-    },
     async saveFile(dataUrl, filename) {
       const a = document.createElement("a");
       a.href = dataUrl;

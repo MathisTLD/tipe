@@ -5,20 +5,20 @@ import DataProcess from "./DataProcess";
 import ParticleSystem from "./ParticleSystem";
 
 // TODO: fix trails' color
+const DEFAULT_OPTIONS = {
+  particles: {
+    maxParticles: 64 * 64,
+    particleHeight: 100.0,
+    fadeOpacity: 0.92,
+    dropRate: 0.003,
+    dropRateBump: 0.15,
+    speedFactor: 0.2,
+    lineWidth: 3
+  }
+};
 
 class Wind3D {
-  constructor(viewer, debug = false) {
-    var options = {
-      particles: {
-        maxParticles: 64 * 64,
-        particleHeight: 100.0,
-        fadeOpacity: 0.92,
-        dropRate: 0.003,
-        dropRateBump: 0.15,
-        speedFactor: 0.2,
-        lineWidth: 3
-      }
-    };
+  constructor(viewer, options = DEFAULT_OPTIONS, debug = false) {
     this.options = options;
 
     this.destroyCallbacks = [];
@@ -43,7 +43,7 @@ class Wind3D {
     );
     this.updateViewerParameters();
 
-    DataProcess.loadData().then(data => {
+    DataProcess.loadData(options.data || undefined).then(data => {
       this.particleSystem = new ParticleSystem(
         this.scene.context,
         data,
@@ -153,21 +153,10 @@ class Wind3D {
       })
     );
 
-    function onParticleSystemOptionsChanged() {
-      that.particleSystem.applyOptions(that.getParticlesOptions());
-    }
-    window.addEventListener(
-      "particleSystemOptionsChanged",
-      onParticleSystemOptionsChanged
-    );
-    rmCallbacks.push(() =>
-      window.removeEventListener(
-        "particleSystemOptionsChanged",
-        onParticleSystemOptionsChanged
-      )
-    );
-
     this.destroyCallbacks.push(...rmCallbacks);
+  }
+  onParticleSystemOptionsChanged() {
+    this.particleSystem.applyOptions(this.getParticlesOptions());
   }
   getParticlesOptions() {
     // make sure maxParticles is exactly the square of particlesTextureSize

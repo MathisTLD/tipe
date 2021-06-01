@@ -2,7 +2,7 @@
   <div id="map-container">
     <div id="cesium-credit" />
     <div id="cesium-container" />
-    <div ref="resultsContainer" id="results-container">
+    <div ref="resultsContainer" id="results-container" v-show="showCards">
       <ResultsCard
         class="ml-2"
         v-for="(result, i) in results"
@@ -11,6 +11,7 @@
         v-show="result.options.showCard"
       />
     </div>
+    <WindPanel ref="wind" />
   </div>
 </template>
 
@@ -19,21 +20,21 @@ window.CESIUM_BASE_URL = "";
 import * as Cesium from "cesium/Cesium";
 import "cesium/Widgets/widgets.css";
 
+import WindPanel from "./WindPanel";
 import ResultsCard from "./ResultsCard";
-
-import Wind3D from "./Wind/Wind3D";
 
 import mapMixin from "./map-mixin";
 export default {
   mixins: [mapMixin],
   components: {
+    WindPanel,
     ResultsCard
   },
   data() {
     return {
       loading: true,
       status: "loading map",
-      wind: false,
+      showCards: true,
       results: []
     };
   },
@@ -43,6 +44,9 @@ export default {
     },
     $progress() {
       return this.$app.$refs.progress;
+    },
+    $wind() {
+      return this.$refs.wind;
     }
   },
   watch: {
@@ -87,23 +91,12 @@ export default {
       }.bind(this),
       3000
     );
-    // hide wind when not in 3D
-    this.viewer.scene.morphStart.addEventListener((_, prevMode) => {
-      if (prevMode === 3) this.hideWind();
-    });
-    this.viewer.scene.morphComplete.addEventListener(
-      (_, prevMode, nextMode) => {
-        if (nextMode === 3) this.showWind();
-      }
-    );
 
-    if (this.viewer.scene._mode === 3) this.showWind();
+    this.$wind.init();
+
     // for (var i = 0; i < 1; i++) {
     //   this.showGrid(18, i * 500000, Cesium.Material.ColorType, 1, i > 0);
     // }
-  },
-  beforeDestroy() {
-    this.hideWind(); // prevents errors on hot relaod
   },
   methods: {
     clear() {
@@ -112,17 +105,6 @@ export default {
       // clear results
       while (this.results.length) {
         this.results.pop();
-      }
-    },
-    showWind() {
-      this.wind3D = new Wind3D(this.viewer, false); // snd arg represents debug mode
-      this.wind = true;
-    },
-    hideWind() {
-      if (this.wind3D) {
-        this.wind3D.destroy();
-        delete this.wind3D;
-        this.wind = false;
       }
     },
     getScreenshot() {

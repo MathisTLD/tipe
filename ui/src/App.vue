@@ -49,10 +49,16 @@ export default {
       event.preventDefault();
       this.saveScreenShot();
     });
-    hotkeys("alt+h", event => {
+    hotkeys("alt+h,alt+shift+h", (event, handler) => {
       event.preventDefault();
       this.hideActions = !this.hideActions;
       document.body.style.cursor = this.hideActions ? "none" : null;
+
+      this.$map.showCards = true;
+      if (handler.key === "alt+shift+h") {
+        // also toggle results card
+        this.$map.showCards = !this.$map.showCards;
+      }
     });
     hotkeys("alt+s", event => {
       event.preventDefault();

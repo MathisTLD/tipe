@@ -46,8 +46,6 @@ import Vue from "vue";
 
 import Wind3D from "./Wind/Wind3D";
 
-import hotkeys from "hotkeys-js";
-
 export default {
   data() {
     return {
@@ -142,16 +140,6 @@ export default {
       Vue.set(this.options, "data", data || null);
       this.reload();
     }
-  },
-  created() {
-    hotkeys("alt+w", event => {
-      event.preventDefault();
-      this.toggle();
-    });
-    hotkeys("alt+shift+w", event => {
-      event.preventDefault();
-      this.toggleConfigurator();
-    });
   },
   beforeDestroy() {
     this.toggle(false); // prevents errors on hot relaod

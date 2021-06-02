@@ -16,6 +16,7 @@
     "html2canvas": "^1.0.0-rc.7",
     "lodash": "^4.17.21",
     "spectorjs": "^0.9.22",
+    "tinygradient": "^1.1.4",
     "vue": "^2.6.11",
     "vuetify": "^2.4.0"
   },

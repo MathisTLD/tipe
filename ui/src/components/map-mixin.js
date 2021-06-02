@@ -16,26 +16,27 @@ function setView(plan) {
   });
 }
 
-// TODO: make heatmaps work or delete them
-// window.h337 = require("../../vendors/heatmap.js");
-// require("cesium-heatmap");
-// const CesiumHeatmap = window.CesiumHeatmap;
+import { displayGraph, displayGrid } from "./draw";
 
-function display(results) {
+function displayResults(results) {
   const { plan, options } = results;
   this.results.push(results);
-  console.log(results);
+  console.log("displaying results", results);
   if (options.showGrid) {
-    this.showGrid(
+    displayGrid.call(
+      this,
       options.precision,
       10 - this.results.length,
       Cesium.Color.fromCssColorString(options.color)
     );
   }
+  if (options.showGraph) {
+    displayGraph.call(this, results);
+  }
   setView.call(this, plan);
   const coordinates = plan.path
     .map(({ loc }) => {
-      return [loc.lon, loc.lat, 0 /* loc.alt */]; // visual effect isn't that good when showing altitude
+      return [loc.lon, loc.lat, 100 /* loc.alt */]; // visual effect isn't that good when showing altitude
     })
     .flat();
   this.viewer.entities.add({
@@ -45,216 +46,11 @@ function display(results) {
       width: 3
     }
   });
-  // if (this.__heatmap && this.__heatmap.destroy) this.__heatmap.destroy();
-  // this.__heatmap = CesiumHeatmap.create(
-  //   this.viewer, // your cesium viewer
-  //   {
-  //     west: 180,
-  //     east: -180,
-  //     south: -90,
-  //     north: 90
-  //   }, // bounds for heatmap layer
-  //   {
-  //     // heatmap.js options go here
-  //     // maxOpacity: 0.3
-  //   }
-  // );
-  // this.__heatmap.setWGS84Data(
-  //   plan.path[0].date,
-  //   plan.path[plan.path.length - 1].date,
-  //   plan.graph
-  //     .filter(() => Math.random() < 0.1)
-  //     .map(({ loc, date }) => ({
-  //       x: loc.lon,
-  //       y: loc.lat,
-  //       value: date
-  //     }))
-  // );
-}
-
-// function displayGraph(itinerary) {
-//   let { results } = itinerary;
-//
-//   let displayNodes = () => {
-//     let nodes = results.graph.nodes;
-//     nodes.forEach(node => {
-//       let text = `${node.location.x}/${node.location.y} - ${
-//         node.cost != undefined ? `${node.cost.toFixed()} km` : "x"
-//       }`;
-//       // unprocessed: Cesium.Color.CRIMSON,
-//       // forbidden: Cesium.Color.ORANGERED,
-//       // navigable: Cesium.Color.LIGHTBLUE,
-//       // special: Cesium.Color.LIGHTGREEN
-//       // color
-//       let color = node.location.navigable
-//         ? Cesium.Color.LIGHTBLUE
-//         : Cesium.Color.ORANGERED;
-//
-//       let entityOptions = {
-//         position: new Cesium.Cartesian3.fromDegrees(
-//           node.location.lon,
-//           node.location.lat
-//         ),
-//         label: new Cesium.LabelGraphics({
-//           text,
-//           showBackground: true,
-//           pixelOffset: new Cesium.Cartesian2(0, -10),
-//           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2e6),
-//           scale: 0.5,
-//           show: true
-//         }),
-//         point: new Cesium.PointGraphics({
-//           color,
-//           pixelSize: 10,
-//           show: true,
-//           scaleByDistance: new Cesium.NearFarScalar(10e3, 1, 10e6, 0.5)
-//         })
-//       };
-//       this.viewer.entities.add(entityOptions);
-//     });
-//   };
-//   let displayEdges = () => {
-//     let nodes = {};
-//     results.graph.nodes.forEach(node => (nodes[node.id] = node));
-//     results.graph.nodes.forEach(node => {
-//       if (node.score != undefined) {
-//         node.edges.forEach(edge => {
-//           let from = node.location;
-//           let to = nodes[edge.to].location;
-//           let arr = [from, to]
-//             .map(({ location: { lat, lon } }) => [lon, lat])
-//             .flat();
-//           let t = 1 / 5;
-//           this.viewer.entities.add({
-//             position: new Cesium.Cartesian3.fromDegrees(
-//               t * from.location.lon + (1 - t) * to.location.lon,
-//               t * from.location.lat + (1 - t) * to.location.lat
-//             ),
-//             label: new Cesium.LabelGraphics({
-//               text: edge.score.toFixed(4),
-//               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-//                 0,
-//                 2e6
-//               ),
-//               scale: 0.4,
-//               showBackground: true
-//             })
-//           });
-//           this.viewer.entities.add({
-//             polyline: {
-//               positions: new Cesium.Cartesian3.fromDegreesArray(arr),
-//               material: new Cesium.Color(0, 1, 0, 0.5),
-//               distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-//                 0,
-//                 2e6
-//               )
-//             }
-//           });
-//         });
-//       }
-//     });
-//   };
-//
-//   displayNodes();
-//   displayGraph();
-// }
-
-function showGrid(
-  n,
-  altitude = 0,
-  material = Cesium.Material.ColorType,
-  width = 1,
-  quarter = false
-) {
-  const d = 180 / n;
-  const mi = quarter ? n / 2 + 1 : n;
-  for (let i = 1; i < mi; i++) {
-    this.parallel(90 - i * d, altitude, material, width, quarter);
-  }
-  const mj = quarter ? n / 2 + 1 : 2 * n;
-  for (let j = 0; j < mj; j++) {
-    this.meridian(j * d, altitude, material, width, quarter);
-  }
-}
-
-function meridian(
-  longitude,
-  altitude = 0,
-  material = Cesium.Material.ColorType,
-  width = 2,
-  half = false
-) {
-  const name = "Meridian " + longitude;
-  return this.viewer.entities.add({
-    name: name,
-    polyline: {
-      positions: Cesium.Cartesian3.fromDegreesArrayHeights(
-        !half
-          ? [
-              longitude,
-              90,
-              altitude,
-              longitude,
-              0,
-              altitude,
-              longitude,
-              -90,
-              altitude
-            ]
-          : [longitude, 90, altitude, longitude, 0, altitude]
-      ),
-      arcType: Cesium.ArcType.RHUMB,
-      material,
-      width
-    }
-  });
-}
-
-function parallel(
-  latitude,
-  altitude = 0,
-  material = Cesium.Material.ColorType,
-  width = 2,
-  quarter = 0
-) {
-  const name = "Parallel " + latitude;
-  return this.viewer.entities.add({
-    name: name,
-    polyline: {
-      positions: Cesium.Cartesian3.fromDegreesArrayHeights(
-        !quarter
-          ? [
-              -180,
-              latitude,
-              altitude,
-              -90,
-              latitude,
-              altitude,
-              0,
-              latitude,
-              altitude,
-              90,
-              latitude,
-              altitude,
-              180,
-              latitude,
-              altitude
-            ]
-          : [0, latitude, altitude, 90, latitude, altitude]
-      ),
-      arcType: Cesium.ArcType.RHUMB,
-      material,
-      width
-    }
-  });
 }
 
 export default {
   methods: {
     cleanup,
-    display,
-    meridian,
-    parallel,
-    showGrid
+    display: displayResults
   }
 };

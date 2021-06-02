@@ -40,17 +40,17 @@
                 hide-details
               />
             </v-col>
-            <v-col cols="12">
+            <v-col cols="9">
               <AircraftSelector v-model="aircraft" />
             </v-col>
-            <v-col cols="12">
+            <v-col cols="3">
               <v-switch inset v-model="weather" label="Use Weather" />
             </v-col>
           </v-row>
           <v-subheader>Display</v-subheader>
           <v-divider class="mb-4" />
           <v-row>
-            <v-col cols="4">
+            <v-col cols="3">
               <v-dialog v-model="showColorPicker" width="225px">
                 <template v-slot:activator="{ on }">
                   <v-btn
@@ -68,11 +68,14 @@
                 ></v-color-picker>
               </v-dialog>
             </v-col>
-            <v-col cols="4">
+            <v-col cols="3">
               <v-switch inset v-model="showCard" label="Show Card" />
             </v-col>
-            <v-col cols="4">
+            <v-col cols="3">
               <v-switch inset v-model="showGrid" label="Show Grid" />
+            </v-col>
+            <v-col cols="3">
+              <v-switch inset v-model="showGraph" label="Show Graph" />
             </v-col>
           </v-row>
         </v-container>
@@ -183,7 +186,8 @@ export default {
       // display options
       color: getColor(),
       showCard: true,
-      showGrid: false
+      showGrid: false,
+      showGraph: false
     };
   },
   watch: {
@@ -241,7 +245,8 @@ export default {
             ...this.options,
             color: this.color,
             showCard: this.showCard,
-            showGrid: this.showGrid
+            showGrid: this.showGrid,
+            showGraph: this.showGraph
           };
           this.$progress.close();
           this.$map.display({ plan, options });

@@ -43,7 +43,7 @@
 
 <script>
 import Vue from "vue";
-
+import hotkeys from "hotkeys-js";
 import Wind3D from "./Wind/Wind3D";
 
 export default {
@@ -94,8 +94,10 @@ export default {
   methods: {
     toggle(_show = null) {
       const show = _show === null ? !this.show : _show;
-      if (show === this.show) return;
+      if (show === !!this.wind3D) return;
       if (show) {
+        if (this.$map.viewer.scene._mode !== 3)
+          return alert("please switch to 3D view before showing wind");
         if (this.wind3D) {
           this.wind3D.destroy();
           delete this.wind3D;
@@ -127,8 +129,6 @@ export default {
           if (nextMode === 3) this.toggle(true);
         }
       );
-
-      if (this.$map.viewer.scene._mode === 3) this.toggle(true);
     },
     reload() {
       if (this.show) {
@@ -140,6 +140,11 @@ export default {
       Vue.set(this.options, "data", data || null);
       this.reload();
     }
+  },
+  created() {
+    hotkeys("alt+w", () => {
+      this.toggle();
+    });
   },
   beforeDestroy() {
     this.toggle(false); // prevents errors on hot relaod

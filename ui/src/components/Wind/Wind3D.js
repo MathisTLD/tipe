@@ -83,14 +83,16 @@ class Wind3D {
     );
   }
   removePrimitives() {
-    [
-      this.particleSystem.particlesComputing.primitives,
-      this.particleSystem.particlesRendering.primitives
-    ].forEach(primitives =>
-      Object.values(primitives).forEach(primitive =>
-        this.scene.primitives.remove(primitive)
-      )
-    );
+    if (this.particleSystem) {
+      [
+        this.particleSystem.particlesComputing.primitives,
+        this.particleSystem.particlesRendering.primitives
+      ].forEach(primitives =>
+        Object.values(primitives).forEach(primitive =>
+          this.scene.primitives.remove(primitive)
+        )
+      );
+    }
   }
 
   updateViewerParameters() {
@@ -188,7 +190,7 @@ class Wind3D {
     // FIXME: find a propper way to destroy wind system
     // FIXME: why ??
     this.removePrimitives();
-    this.particleSystem.destroy();
+    if (this.particleSystem) this.particleSystem.destroy();
     // deregister event listeners
     this.destroyCallbacks.forEach(cb => cb());
   }

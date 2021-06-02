@@ -1,9 +1,11 @@
 import * as Cesium from "cesium/Cesium";
 
+const DEFAULT_MATERIAL = Cesium.Color.fromCssColorString("white");
+
 export function displayGrid(
   n,
   altitude = 0,
-  material = Cesium.Material.ColorType,
+  material = DEFAULT_MATERIAL,
   width = 1,
   quarter = false
 ) {
@@ -21,7 +23,7 @@ export function displayGrid(
 function meridian(
   longitude,
   altitude = 0,
-  material = Cesium.Material.ColorType,
+  material = DEFAULT_MATERIAL,
   width = 2,
   half = false
 ) {
@@ -54,7 +56,7 @@ function meridian(
 function parallel(
   latitude,
   altitude = 0,
-  material = Cesium.Material.ColorType,
+  material = DEFAULT_MATERIAL,
   width = 2,
   quarter = 0
 ) {

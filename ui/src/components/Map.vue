@@ -93,10 +93,6 @@ export default {
     );
 
     this.$wind.init();
-
-    // for (var i = 0; i < 1; i++) {
-    //   this.showGrid(18, i * 500000, Cesium.Material.ColorType, 1, i > 0);
-    // }
   },
   methods: {
     clear() {

@@ -5,14 +5,9 @@ function cleanup() {
   this.viewer.entities.removeAll();
 }
 
-function setView(plan) {
-  let { departure, arrival } = plan.options;
+function setView(loc) {
   this.viewer.camera.setView({
-    destination: new Cesium.Cartesian3.fromDegrees(
-      (departure.lon + arrival.lon) / 2,
-      (departure.lat + arrival.lat) / 2,
-      8000000
-    )
+    destination: new Cesium.Cartesian3.fromDegrees(loc.lon, loc.lat, loc.alt)
   });
 }
 
@@ -20,6 +15,7 @@ import { displayGraph, displayGrid } from "./draw";
 
 function displayResults(results) {
   const { plan, options } = results;
+  const { departure, arrival } = plan.options;
   this.results.push(results);
   console.log("displaying results", results);
   if (options.showGrid) {
@@ -33,7 +29,11 @@ function displayResults(results) {
   if (options.showGraph) {
     displayGraph.call(this, results);
   }
-  setView.call(this, plan);
+  setView.call(this, {
+    lon: (departure.lon + arrival.lon) / 2,
+    lat: (departure.lat + arrival.lat) / 2,
+    alt: 8000000
+  });
   const coordinates = plan.path
     .map(({ loc }) => {
       return [loc.lon, loc.lat, 100 /* loc.alt */]; // visual effect isn't that good when showing altitude
@@ -51,6 +51,7 @@ function displayResults(results) {
 export default {
   methods: {
     cleanup,
+    setView,
     display: displayResults
   }
 };

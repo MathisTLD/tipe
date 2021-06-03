@@ -70,32 +70,33 @@ let bearing (loc1: location) (loc2: location) =
 
 type direction = | N | S | E | W | Up | Down
 type heading = direction list
-(* generates a list of 4*n headings *)
-let rec gen_headings n : heading list =
-  match n with
-  | 0 -> [] (* should never happen *)
-  | 1 -> [[N];[S];[E];[W]]
-  | _ -> (
-      let rec relatively_prime a b =
-        if a < b then relatively_prime b a
-        else (
-          if b = 0 then a = 1 else relatively_prime b (a mod b)
-        ) in
-      let new_headings = ref [] in
-      for i = 0 to n do
-        if relatively_prime i (n-i) then (
-          List.iter (fun (a,b) -> (
-                let arr = Array.make n b in
-                for k = 0 to i-1 do
-                  arr.(k) <- a
-                done;
-                new_headings := (Array.to_list arr)::(!new_headings)
-              )
-            ) [(N,E);(N,W);(S,E);(S,W)]
-        )
-      done;
-      (gen_headings (n-1))@(!new_headings)
+(* generates n-th set of headings *)
+let gen_headings n =
+  let t = Array.make (8*n) (0,0) in
+  for k = -n to n do
+    let i = k + n in
+    t.(i) <- (n,k);
+    t.(2*n+1+i) <- (-n,k);
+    if(abs k < n) then (
+      t.(4*n+2+i-1) <- (k,n);
+      t.(6*n+1+i-1) <- (k,-n);
     )
+  done;
+  Array.to_list (Array.map (fun (dx_,dy_) -> (
+        let rec gcd a b =
+          if b = 0 then a else (
+            let c = a mod b in gcd b c
+          ) in
+        let p = gcd (abs dx_) (abs dy_) in
+        let dx = (if p>1 then dx_/p else dx_) in
+        let dy = (if p>1 then dy_/p else dy_) in
+        let t = Array.make ((abs dx) + (abs dy)) (if dx < 0 then W else E) in
+        for i = 0 to (abs dy) - 1 do
+          t.(i) <- (if dx < 0 then S else N)
+        done;
+        Array.to_list t
+      )) t)
+
 let heading_to_string heading =
   List.map (fun d -> match d with
       | N -> "n"| S -> "s" | E ->"e" |W->"w" |Up -> "⬆" | Down -> "⬇") heading |> String.concat ""

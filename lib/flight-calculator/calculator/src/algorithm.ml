@@ -97,21 +97,28 @@ let run options =
   let add_edges node =
     List.iter (fun heading -> (
           let edge = create_edge node heading in
-          let arrival_point = (snd edge.nodes).point in
-          (* optimize insertions to limit queue size *)
-          (* for Heap docs see https://github.com/janestreet/core_kernel/blob/master/pairing_heap/src/pairing_heap.mli *)
-          let cached = Hashtbl.find_opt queue_cache arrival_point in
-          let distance = calculate_distance edge in (* distance represents a time here *)
-          if(Option.is_none cached) then (
-            let new_token = Heap.add_removable queue (distance, edge) in
-            Hashtbl.add queue_cache arrival_point (new_token, distance, edge);
-          ) else (
-            let (prev_token,prev_distance,prev_edge) = Option.get cached in
-            if(distance < prev_distance) then (
-              let new_token = Heap.update queue prev_token (distance, edge) in
-              Hashtbl.replace queue_cache arrival_point (new_token, distance, edge)
+          let destination_point = (snd edge.nodes).point in
+          (* don't add any other ground-level points that isn't the arrival point in the queue *)
+          if (match destination_point with
+              | (_,_,0) when destination_point = arrival_point -> true
+              | (_,_,0) -> false
+              |_ -> true
+            ) then (
+            (* optimize insertions to limit queue size *)
+            (* for Heap docs see https://github.com/janestreet/core_kernel/blob/master/pairing_heap/src/pairing_heap.mli *)
+            let cached = Hashtbl.find_opt queue_cache destination_point in
+            let distance = calculate_distance edge in (* distance represents a time here *)
+            if(Option.is_none cached) then (
+              let new_token = Heap.add_removable queue (distance, edge) in
+              Hashtbl.add queue_cache destination_point (new_token, distance, edge);
+            ) else (
+              let (prev_token,prev_distance,prev_edge) = Option.get cached in
+              if(distance < prev_distance) then (
+                let new_token = Heap.update queue prev_token (distance, edge) in
+                Hashtbl.replace queue_cache destination_point (new_token, distance, edge)
+              )
+              (* else do nothing and ignore current edge *)
             )
-            (* else do nothing and ignore current edge *)
           )
         )
       ) (

@@ -92,7 +92,7 @@ let gen_headings n =
         let dy = (if p>1 then dy_/p else dy_) in
         let t = Array.make ((abs dx) + (abs dy)) (if dx < 0 then W else E) in
         for i = 0 to (abs dy) - 1 do
-          t.(i) <- (if dx < 0 then S else N)
+          t.(i) <- (if dy < 0 then S else N)
         done;
         Array.to_list t
       )) t)

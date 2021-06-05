@@ -27,6 +27,14 @@
                 required
               />
             </v-col>
+            <v-col v-if="algorithm === 'wa*'" cols="12">
+              <v-text-field
+                label="Heuristic's Weight"
+                v-model.number="heurWeight"
+                type="number"
+                step="0.1"
+              />
+            </v-col>
             <v-col cols="9">
               <PrecisionSlider v-model="precision" />
             </v-col>
@@ -100,7 +108,7 @@ import PrecisionSlider from "./PrecisionSlider";
 
 import colors from "vuetify/lib/util/colors";
 const palette = ["red", "green", "amber", "blue", "purple", "teal"].map(
-  name => colors[name].base
+  (name) => colors[name].base
 );
 
 let colorIndex = 0;
@@ -138,33 +146,33 @@ const locations = {
     place_id: "ChIJD7fiBh9u5kcRYJSMaMOCCwQ",
     description: "Paris, France",
     lat: 48.856614,
-    lon: 2.3522219
+    lon: 2.3522219,
   },
   brest: {
     place_id: "ChIJk1uS2eG7FkgRqzCcF1iDSMY",
     description: "Brest, France",
     lat: 48.390394,
-    lon: -4.486075999999999
+    lon: -4.486075999999999,
   },
   miami: {
     place_id: "ChIJEcHIDqKw2YgRZU-t3XHylv8",
     description: "Miami, FL, USA",
     lat: 25.7616798,
-    lon: -80.1917902
+    lon: -80.1917902,
   },
   florence: {
     id: "ChIJrdbSgKZWKhMRAyrH7xd51ZM",
     description: "Florence, Metropolitan City of Florence, Italy",
     lat: 43.7695604,
-    lon: 11.2558136
-  }
+    lon: 11.2558136,
+  },
 };
 
 export default {
   components: {
     LocationSearch,
     PrecisionSlider,
-    AircraftSelector
+    AircraftSelector,
   },
   data() {
     return {
@@ -172,8 +180,10 @@ export default {
       waiting: false,
       algorithms: [
         { id: "dijkstra", name: "Dijkstra" },
-        { id: "a*", name: "A*" }
+        { id: "a*", name: "A*" },
+        { id: "wa*", name: "WA*" },
       ],
+      heurWeight: 1,
       showColorPicker: false,
       // options
       algorithm: "dijkstra",
@@ -187,7 +197,7 @@ export default {
       color: getColor(),
       showCard: true,
       showGrid: false,
-      showGraph: false
+      showGraph: false,
     };
   },
   watch: {
@@ -196,7 +206,7 @@ export default {
     },
     arrival() {
       this.updatePrecision();
-    }
+    },
   },
   computed: {
     $app() {
@@ -208,26 +218,40 @@ export default {
     $progress() {
       return this.$app.$refs.progress;
     },
+    heuristic_weight() {
+      switch (this.algorithm) {
+        case "dijkstra":
+          return 0;
+        case "a*":
+          return 1;
+        case "wa*":
+          return this.heurWeight;
+        default:
+          throw new Error(`Unknown algorithm ${this.algorithm}`);
+      }
+    },
     options() {
+      const { showGraph } = this;
       const {
         arrival,
         departure,
-        algorithm,
+        heuristic_weight,
         precision,
         directions,
         aircraft,
-        weather
+        weather,
       } = this;
       return {
         arrival,
         departure,
-        algorithm,
+        heuristic_weight,
         precision,
         directions,
         aircraft,
-        weather
+        weather,
+        export_graph: showGraph,
       };
-    }
+    },
   },
   created() {
     this.updatePrecision();
@@ -239,17 +263,16 @@ export default {
       this.$progress.open();
       axios
         .post("/api/calculator/run", this.options)
-        .then(res => {
-          const plan = res.data;
-          const options = {
-            ...this.options,
+        .then((res) => {
+          const results = res.data;
+          results.options.display = {
             color: this.color,
             showCard: this.showCard,
             showGrid: this.showGrid,
-            showGraph: this.showGraph
+            showGraph: this.showGraph,
           };
           this.$progress.close();
-          this.$map.display({ plan, options });
+          this.$map.displayResults(results);
 
           // change color for next itinerary
           this.color = getColor();
@@ -283,7 +306,7 @@ export default {
     toggle() {
       if (this.dialog) return this.close();
       else return this.open();
-    }
-  }
+    },
+  },
 };
 </script>

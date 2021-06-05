@@ -2,7 +2,7 @@ const path = require("path");
 
 module.exports = {
   transpileDependencies: ["vuetify"],
-  chainWebpack: cfg => {
+  chainWebpack: (cfg) => {
     // cesium (https://cesium.com/docs/tutorials/cesium-and-webpack/)
     const CopywebpackPlugin = require("copy-webpack-plugin");
     const cesiumSource = path.resolve(__dirname, "node_modules/cesium/Source");
@@ -19,12 +19,12 @@ module.exports = {
         patterns: [
           {
             from: path.resolve(cesiumSource, "../Build/Cesium/Workers"),
-            to: "Workers"
+            to: "Workers",
           },
           { from: path.resolve(cesiumSource, "Assets"), to: "Assets" },
-          { from: path.resolve(cesiumSource, "Widgets"), to: "Widgets" }
-        ]
-      }
+          { from: path.resolve(cesiumSource, "Widgets"), to: "Widgets" },
+        ],
+      },
     ]);
-  }
+  },
 };

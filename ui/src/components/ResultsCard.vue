@@ -26,13 +26,13 @@
               <v-icon small>fa-microchip</v-icon>
             </v-list-item-icon>
             <v-list-item-subtitle
-              >{{ (results.plan.time / 1000).toFixed(1) }} s
+              >{{ (results.stats.nb_nodes / 1000).toFixed(1) }} s
             </v-list-item-subtitle>
             <v-list-item-icon class="mr-1">
               <v-icon small>fa-project-diagram</v-icon>
             </v-list-item-icon>
             <v-list-item-subtitle>{{
-              results.plan.graph.length
+              results.stats.nb_nodes
             }}</v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
@@ -56,20 +56,20 @@ export default {
   props: {
     results: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
-      showDetails: false
+      showDetails: false,
     };
   },
   computed: {
     color() {
-      return this.results.options.color;
+      return this.results.options.display.color;
     },
     duration() {
-      const path = this.results.plan.path;
+      const path = this.results.path;
       const duration = path[path.length - 1].date - path[0].date;
       const minutes = Math.floor(duration / (60 * 1000)) % 60;
       const hours = Math.floor(duration / (60 * 60 * 1000));
@@ -79,21 +79,28 @@ export default {
       );
     },
     fuel() {
-      const path = this.results.plan.path;
+      const path = this.results.path;
       const consumption = Math.abs(path[path.length - 1].fuel - path[0].fuel); // in m3
       return `${(consumption * 1000).toFixed(0)} L`;
     },
     algorithm() {
-      const upperFirst = str => str.charAt(0).toUpperCase() + str.slice(1);
-      return upperFirst(this.results.options.algorithm);
+      const weight = this.results.options.heuristic_weight;
+      switch (weight) {
+        case 0:
+          return "Dijkstra";
+        case 1:
+          return "A*";
+        default:
+          return `WA* (${weight})`;
+      }
     },
     fields() {
       return [
         { icon: "fa-plane", text: this.results.options.aircraft },
         { icon: "fa-stopwatch", text: this.duration },
-        { icon: "fa-gas-pump", text: this.fuel }
+        { icon: "fa-gas-pump", text: this.fuel },
       ];
-    }
-  }
+    },
+  },
 };
 </script>

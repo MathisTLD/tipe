@@ -60,15 +60,15 @@ export default {
           dropRate: 0.003,
           dropRateBump: 0.15,
           speedFactor: 0.2,
-          lineWidth: 3
-        }
-      }
+          lineWidth: 3,
+        },
+      },
     };
   },
   watch: {
     show(val) {
       this.toggle(val);
-    }
+    },
   },
   computed: {
     $app() {
@@ -89,7 +89,7 @@ export default {
         date.setUTCHours(data[0].dataTime);
         return date.toString();
       }
-    }
+    },
   },
   methods: {
     toggle(_show = null) {
@@ -139,7 +139,7 @@ export default {
     loadData(data) {
       Vue.set(this.options, "data", data || null);
       this.reload();
-    }
+    },
   },
   created() {
     hotkeys("alt+w", () => {
@@ -148,6 +148,6 @@ export default {
   },
   beforeDestroy() {
     this.toggle(false); // prevents errors on hot relaod
-  }
+  },
 };
 </script>

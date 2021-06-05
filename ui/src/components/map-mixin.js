@@ -14,19 +14,16 @@ function setView(loc) {
 import { displayGraph, displayGrid } from "./draw";
 
 function displayResults(results) {
-  const { plan, options } = results;
-  const { departure, arrival } = plan.options;
-  this.results.push(results);
   console.log("displaying results", results);
-  if (options.showGrid) {
-    displayGrid.call(
-      this,
-      options.precision,
-      10 - this.results.length,
-      Cesium.Color.fromCssColorString(options.color)
-    );
+  const { options } = results;
+  const { departure, arrival } = options;
+  this.results.push(results);
+  const color = Cesium.Color.fromCssColorString(options.display.color);
+  console.log("ok");
+  if (options.display.showGrid) {
+    displayGrid.call(this, options.precision, 10 - this.results.length, color);
   }
-  if (options.showGraph) {
+  if (options.display.showGraph) {
     displayGraph.call(this, results);
   }
   setView.call(this, {
@@ -34,15 +31,15 @@ function displayResults(results) {
     lat: (departure.lat + arrival.lat) / 2,
     alt: 8000000
   });
-  const coordinates = plan.path
+  const coordinates = results.path
     .map(({ loc }) => {
       return [loc.lon, loc.lat, 100 /* loc.alt */]; // visual effect isn't that good when showing altitude
     })
     .flat();
   this.viewer.entities.add({
     polyline: {
-      positions: new Cesium.Cartesian3.fromDegreesArrayHeights(coordinates),
-      material: new Cesium.Color.fromCssColorString(options.color),
+      positions: Cesium.Cartesian3.fromDegreesArrayHeights(coordinates),
+      material: color,
       width: 3
     }
   });
@@ -52,6 +49,6 @@ export default {
   methods: {
     cleanup,
     setView,
-    display: displayResults
+    displayResults
   }
 };

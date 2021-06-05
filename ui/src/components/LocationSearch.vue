@@ -23,8 +23,8 @@ export default {
   props: {
     value: {
       required: true,
-      type: Object
-    }
+      type: Object,
+    },
   },
   data() {
     return {
@@ -34,15 +34,15 @@ export default {
       search: "",
       loadingResults: false,
       cancelNextSearch: false,
-      makeSearchDebounced: null
+      makeSearchDebounced: null,
     };
   },
   computed: {
     candidates() {
       return this.locations
-        .map(loc => ({ ...loc, place_id: loc.id }))
+        .map((loc) => ({ ...loc, place_id: loc.id }))
         .concat(this.searchCandidates);
-    }
+    },
   },
   watch: {
     search(value) {
@@ -54,7 +54,7 @@ export default {
       if (!this.makeSearchDebounced)
         this.makeSearchDebounced = debounce(this.makeSearch.bind(this), 500);
       this.makeSearchDebounced(value);
-    }
+    },
   },
   created() {
     this.cancelNextSearch = true;
@@ -66,7 +66,7 @@ export default {
           id,
           description,
           lat,
-          lon
+          lon,
         }))
       );
     });
@@ -81,14 +81,14 @@ export default {
         axios
           .get("/api/places/geocode", {
             params: {
-              place_id
-            }
+              place_id,
+            },
           })
-          .then(response => {
+          .then((response) => {
             Object.assign(this.location, response.data.location);
             this.$emit("input", this.location);
           })
-          .catch(error => {
+          .catch((error) => {
             console.error(error);
           });
       }
@@ -111,18 +111,18 @@ export default {
       await axios
         .get("/api/places/autocomplete", {
           params: {
-            input
-          }
+            input,
+          },
         })
-        .then(response => {
+        .then((response) => {
           this.searchCandidates = response.data;
         })
-        .catch(error => {
+        .catch((error) => {
           console.error(error);
           this.error = "Unknown Error. Please check details and try again.";
         })
         .finally(() => (this.loadingResults = false));
-    }
-  }
+    },
+  },
 };
 </script>

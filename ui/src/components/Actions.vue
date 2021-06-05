@@ -22,7 +22,7 @@
 export default {
   data() {
     return {
-      open: false
+      open: false,
     };
   },
   computed: {
@@ -31,7 +31,7 @@ export default {
     },
     $map() {
       return this.$app.$refs.map;
-    }
+    },
   },
   methods: {
     clear() {
@@ -42,7 +42,7 @@ export default {
     },
     toggleConfigurator() {
       this.$app.$refs.configurator.toggle();
-    }
-  }
+    },
+  },
 };
 </script>

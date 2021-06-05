@@ -3,7 +3,7 @@
     v-model="i"
     label="Precision"
     :max="precisions.length - 1"
-    :tick-labels="precisions.map(x => x.label)"
+    :tick-labels="precisions.map((x) => x.label)"
     hide-details
   />
 </template>
@@ -18,7 +18,7 @@ const precisions = [
   { label: "50km", q: 360 },
   { label: "25km", q: 720 },
   { label: "10km", q: 2000 },
-  { label: "5km", q: 4000 }
+  { label: "5km", q: 4000 },
 ];
 
 // precisions.forEach(p =>
@@ -29,13 +29,13 @@ export default {
   props: {
     value: {
       required: true,
-      type: Number
-    }
+      type: Number,
+    },
   },
   data() {
     return {
       i: null,
-      precisions
+      precisions,
     };
   },
   watch: {
@@ -45,7 +45,7 @@ export default {
     },
     value(x) {
       this.i = this.determineIndex(x);
-    }
+    },
   },
   methods: {
     determineIndex(n) {
@@ -58,10 +58,10 @@ export default {
           0
         );
       return i;
-    }
+    },
   },
   created() {
     this.i = this.determineIndex(this.value);
-  }
+  },
 };
 </script>

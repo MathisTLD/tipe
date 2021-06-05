@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "campbell start --dev",
     "start": "campbell start --prod",
-    "build": "campbell build"
+    "build": "campbell build",
+    "prettier": "prettier --ignore-path .gitignore --write lib/**/*.js ui/**/*.{js,vue}"
   },
   "author": "MathisTLD",
   "license": "ISC",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@campbell/cli": "^1.0.0-beta.2",
-    "eslint": "^7.23.0"
+    "eslint": "^7.23.0",
+    "prettier": "^2.0.2"
   }
 }

@@ -23,7 +23,7 @@ export default {
     return {
       aircrafts: [],
       selected: "Beech Baron",
-      loading: true
+      loading: true,
     };
   },
   methods: {
@@ -31,18 +31,18 @@ export default {
       this.aircrafts.push(
         ...(await axios
           .get("/api/aircrafts/get")
-          .then(res => Object.values(res.data)))
+          .then((res) => Object.values(res.data)))
       );
       this.loading = false;
     },
     select() {
       this.$emit("input", this.selected);
-    }
+    },
   },
   created() {
     if (this.value) this.selected = this.value;
     else this.select();
     this.fetchAircrafts();
-  }
+  },
 };
 </script>

@@ -31,22 +31,22 @@ export default {
     Map,
     Actions,
     Configurator,
-    Progress
+    Progress,
   },
   data() {
     return {
       version: require("../../package.json").version,
-      hideActions: false
+      hideActions: false,
     };
   },
   created() {
-    this._ondragover = ev => ev.preventDefault();
-    this._ondrop = async ev => {
+    this._ondragover = (ev) => ev.preventDefault();
+    this._ondrop = async (ev) => {
       ev.preventDefault();
       if (ev.dataTransfer && ev.dataTransfer.files) {
         for (let file of ev.dataTransfer.files) {
           if (file.type === "application/json") {
-            const json = await new Promise(resolve => {
+            const json = await new Promise((resolve) => {
               const reader = new FileReader();
               reader.onload = () => {
                 resolve(reader.result);
@@ -56,7 +56,7 @@ export default {
             const obj = JSON.parse(json);
             if (
               Array.isArray(obj) &&
-              obj.every(x => "plan" in x && "options" in x)
+              obj.every((x) => "plan" in x && "options" in x)
             ) {
               // file is results
               this.importResults(obj);
@@ -64,7 +64,7 @@ export default {
               Array.isArray(obj) &&
               obj.length === 2 &&
               obj.every(
-                x =>
+                (x) =>
                   "latitudeOfFirstGridPointInDegrees" in x &&
                   x.name.endsWith("wind")
               )
@@ -81,7 +81,7 @@ export default {
     window.addEventListener("dragover", this._ondragover);
     window.addEventListener("drop", this._ondrop);
 
-    hotkeys("alt+p", event => {
+    hotkeys("alt+p", (event) => {
       event.preventDefault();
       this.saveScreenShot();
     });
@@ -96,7 +96,7 @@ export default {
         this.$map.showCards = !this.$map.showCards;
       }
     });
-    hotkeys("alt+s", event => {
+    hotkeys("alt+s", (event) => {
       event.preventDefault();
       this.exportResults();
     });
@@ -108,7 +108,7 @@ export default {
   computed: {
     $map() {
       return this.$refs.map;
-    }
+    },
   },
   methods: {
     async saveFile(dataUrl, filename) {
@@ -117,7 +117,7 @@ export default {
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      setTimeout(function() {
+      setTimeout(function () {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(dataUrl);
       }, 0);
@@ -128,7 +128,7 @@ export default {
       await this.saveFile(URL.createObjectURL(blob), "results.json");
     },
     async importResults(results) {
-      results.forEach(res => this.$map.display(res));
+      results.forEach((res) => this.$map.display(res));
     },
     async saveScreenShot() {
       const map = this.$refs.map;
@@ -141,10 +141,10 @@ export default {
         newCanvas.height = scale * oldCanvas.height;
         const url = await map.getScreenshot();
         // const url = oldCanvas.toDataURL("image/jpg");
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           const img = new Image();
           img.setAttribute("src", url);
-          img.onload = function() {
+          img.onload = function () {
             ctx.drawImage(img, 0, 0, newCanvas.width, newCanvas.height);
             resolve();
           };
@@ -156,10 +156,10 @@ export default {
       await html2canvas(document.body, {
         canvas: mapCanvasClone,
         backgroundColor: null,
-        onclone: doc => {
+        onclone: (doc) => {
           doc.querySelector(".v-application").style.background = "transparent";
         },
-        ignoreElements: el => {
+        ignoreElements: (el) => {
           if (
             el.id === "cesium-credit" ||
             el.classList.contains("cesium-viewer-toolbar") ||
@@ -168,15 +168,15 @@ export default {
           ) {
             return true;
           } else return false;
-        }
-      }).then(canvas => {
+        },
+      }).then((canvas) => {
         this.saveFile(
           canvas.toDataURL("image/jpg"),
           `capture-${new Date().toISOString()}.jpg`
         );
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

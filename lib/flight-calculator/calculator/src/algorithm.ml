@@ -8,7 +8,8 @@ type options = {
   directions : int;
   weather: bool;
   aircraft: string;
-  algorithm: string;
+  heuristic_weight: float;
+  export_graph: bool;
 } [@@deriving yojson]
 
 let options_from_string str =
@@ -41,11 +42,16 @@ let step_of_node grid node =
     date=Float.round (to_span_since_epoch node.date |> Span.to_ms) |> Float.to_int
   }
 
+type results_stats = {
+  graph: (step list) option;
+  nb_nodes: int;
+  time: int; (* time in ms *)
+} [@@deriving yojson_of]
+
 type results = {
   options: options;
-  graph: step list;
   path: step list;
-  time: int; (* time in ms *)
+  stats: results_stats;
 } [@@deriving yojson_of]
 
 module Heap = Pairing_heap
@@ -56,8 +62,10 @@ let run options =
   "Options:" |> Output.verbose;
   Printf.sprintf "- departure: " ^ (location_to_string options.departure) |> Output.verbose;
   Printf.sprintf "- arrival: " ^ (location_to_string options.arrival) |> Output.verbose;
-  Printf.sprintf "- algorithm: %s" options.algorithm |> Output.verbose;
+  let heurweight = options.heuristic_weight in
+  Printf.sprintf "- algorithm: %s" (if heurweight = 0. then "Dijkstra" else if heurweight = 1. then "A*" else (Printf.sprintf "WA* (%f)" heurweight)) |> Output.verbose;
   Printf.sprintf "- precision: %d" options.precision |> Output.verbose;
+  Printf.sprintf "- direction set: %d" options.directions |> Output.verbose;
   let time_start = Utils.Date.now () in
   let aircraft = new Aircraft.aircraft options.aircraft in
   (* FIXME: add altitudes that corresponds to airecraft's specs *)
@@ -72,17 +80,16 @@ let run options =
   let headings_top = headings_horizontal @ headings_down in
   let headings_floor = headings_up in
   let headings_all = headings_horizontal @ headings_up @ headings_down in
-  let calculate_distance = match options.algorithm with
-    | a when a = "dijkstra" -> fun edge -> (snd edge.nodes).date
-    | a when a = "a*" -> (
-        let arrival_loc = grid#location_of_point arrival_point in
-        fun edge -> (
-            let open Date in
-            let node = (snd edge.nodes) in
-            (* we add estimated time to arrival (by ignoring wind) to actual date when we will reach that node *)
-            add node.date (aircraft#get_move_cost (grid#location_of_point node.point) arrival_loc).time
-          ))
-    | a -> failwith (Printf.sprintf "unknown algorithm %s" a)  in
+  let calculate_distance = if heurweight = 0. then fun edge -> (snd edge.nodes).date else (
+      let arrival_loc = grid#location_of_point arrival_point in
+      fun edge -> (
+          let open Date in
+          let node = (snd edge.nodes) in
+          let heuristic = (aircraft#get_move_cost (grid#location_of_point node.point) arrival_loc).time in
+          (* we add estimated time to arrival (by ignoring wind) to actual date when we will reach that node *)
+          add node.date (Span.of_ns (heurweight *. (Span.to_ns heuristic)))
+        )
+    ) in
   let create_edge (node_from: node) heading =
     let point_to = grid#resolve_next_point node_from.point heading in
     let loc_from = grid#location_of_point node_from.point in
@@ -142,7 +149,7 @@ let run options =
       let node = snd edge.nodes in
       if (Hashtbl.mem seen node.point) then ()
       else (
-        Hashtbl.add seen node.point (node, fst edge.nodes);
+        Hashtbl.add seen node.point edge;
         if node.point = arrival_point then (
           found := true
         ) else (
@@ -157,16 +164,19 @@ let run options =
     | {point;_}::_  -> (
         if point = departure_point then path
         else (
-          let parent = Hashtbl.find seen point |> snd in
+          let parent = fst (Hashtbl.find seen point).nodes in
           get_path (parent::path)
         )
       )
     | _ -> failwith "please provide a node" in
-  let path = get_path [fst (Hashtbl.find seen arrival_point)] |> List.map (fun node -> step_of_node grid node) in
-  let graph = Hashtbl.fold (fun _ (node,_) acc -> node::acc) seen [] |> List.map (fun node -> step_of_node grid node) in
-  let time = (Date.diff (Utils.Date.now ()) time_start) |> Date.Span.to_ms |> Float.round |> Float.to_int in
-  let results = {options;graph;path;time} in
-  sprintf "done in %dms" results.time |> Output.verbose;
-  sprintf "processed %d nodes" (List.length results.graph) |> Output.verbose;
+  let path = get_path [snd (Hashtbl.find seen arrival_point).nodes] |> List.map (fun node -> step_of_node grid node) in
+  let stats = {
+    time = (Date.diff (Utils.Date.now ()) time_start) |> Date.Span.to_ms |> Float.round |> Float.to_int;
+    nb_nodes = Hashtbl.length seen;
+    graph = if options.export_graph then Some (Hashtbl.to_seq_values seen |> List.of_seq |> List.map (fun edge -> step_of_node grid (snd edge.nodes))) else None;
+  } in
+  let results = {options;path;stats} in
+  sprintf "done in %dms" results.stats.time |> Output.verbose;
+  sprintf "processed %d nodes" results.stats.nb_nodes |> Output.verbose;
   sprintf "path includes %d nodes" (List.length results.path) |> Output.verbose;
   Yojson.Safe.to_string (yojson_of_results results) |> Output.event "results"

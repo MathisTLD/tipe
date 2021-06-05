@@ -14,12 +14,11 @@ function setView(loc) {
 import { displayGraph, displayGrid } from "./draw";
 
 function displayResults(results) {
-  console.log("displaying results", results);
+  console.debug("displaying results", results);
   const { options } = results;
   const { departure, arrival } = options;
   this.results.push(results);
   const color = Cesium.Color.fromCssColorString(options.display.color);
-  console.log("ok");
   if (options.display.showGrid) {
     displayGrid.call(this, options.precision, 10 - this.results.length, color);
   }

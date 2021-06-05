@@ -58,7 +58,54 @@ export default {
               Array.isArray(obj) &&
               obj.every((x) => "plan" in x && "options" in x)
             ) {
-              // file is results
+              // file is results (old format)
+              const results = obj.map((x) => {
+                const res = {};
+                const { plan, options } = x;
+                res.path = plan.path;
+                res.stats = {
+                  time: plan.time,
+                  nb_nodes: plan.graph.length,
+                  graph: plan.graph,
+                };
+                const {
+                  aircraft,
+                  arrival,
+                  departure,
+                  directions,
+                  precision,
+                  weather,
+                  algorithm,
+                  // display
+                  color,
+                  showCard,
+                  showGrid,
+                  showGraph,
+                } = options;
+                res.options = {
+                  aircraft,
+                  arrival,
+                  departure,
+                  directions,
+                  precision,
+                  weather,
+                  heuristic_weight: algorithm === "dijkstra" ? 0 : 1,
+                  display: {
+                    color,
+                    showCard: !!showCard,
+                    showGrid: !!showGrid,
+                    showGraph: !!showGraph,
+                  },
+                };
+                console.log(x);
+                return res;
+              });
+              this.importResults(results);
+            } else if (
+              Array.isArray(obj) &&
+              obj.every((x) => "path" in x && "options" in x && "stats" in x)
+            ) {
+              // file is results (new format)
               this.importResults(obj);
             } else if (
               Array.isArray(obj) &&
@@ -128,7 +175,7 @@ export default {
       await this.saveFile(URL.createObjectURL(blob), "results.json");
     },
     async importResults(results) {
-      results.forEach((res) => this.$map.display(res));
+      results.forEach((res) => this.$map.displayResults(res));
     },
     async saveScreenShot() {
       const map = this.$refs.map;

@@ -96,7 +96,7 @@ module.exports = {
     this.router.get("/geocode", async (req, res) => {
       if (req.query.place_id) {
         try {
-          const location = this.geocode(req.query.place_id);
+          const location = await this.geocode(req.query.place_id);
           res.status(200).json(location);
         } catch (e) {
           res.status(400).json({ msg: JSON.stringify(e) });

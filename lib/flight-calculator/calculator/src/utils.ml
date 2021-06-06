@@ -7,6 +7,13 @@ module Date = struct
   let of_iso_string iso =
     let time = of_string_gen ~default_zone:(fun () -> Zone.utc) ~find_zone:(fun str -> Zone.utc) iso in
     time
+
+  let of_js_date epoch =
+    let span = Float.of_int epoch |> Span.of_ms in
+    of_span_since_epoch span
+  let to_js_date date =
+    let span = to_span_since_epoch date in
+    Span.to_ms span |> Float.round |> Float.to_int
 end
 
 module Output = struct

@@ -2,6 +2,7 @@ open Geo
 open Utils
 
 type options = {
+  departure_date : int;
   departure : location;
   arrival : location;
   precision : int;
@@ -39,7 +40,7 @@ let step_of_node grid node =
   {
     loc=grid#location_of_point node.point;
     fuel=node.fuel;
-    date=Float.round (to_span_since_epoch node.date |> Span.to_ms) |> Float.to_int
+    date=Date.to_js_date node.date
   }
 
 type results_stats = {
@@ -135,7 +136,7 @@ let run options =
       | (_,_,k) when k = grid#nz - 1 -> headings_top
       |_->headings_all
     ) in
-  add_edges {point=departure_point;date=Utils.Date.now ();fuel = 0.};
+  add_edges {point=departure_point;date=Date.of_js_date options.departure_date;fuel = 0.};
   let i = ref 0 in
   let max_i = 10000000 in
   let found = ref false in

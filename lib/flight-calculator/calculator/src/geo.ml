@@ -23,7 +23,7 @@ type 'a surrounding ={
 let location_to_string ?(format="dd") (loc: location) =
   let deg_to_dms dd =
     let d = Float.floor dd in
-    let m = (dd -. d) *. 60. in
+    let m = Float.floor ((dd -. d) *. 60.) in
     let s = (dd -. d -. m /. 60.) *. 3600. in
     let to_str x = Printf.sprintf "%02d" (Float.to_int x) in
     Printf.sprintf "%s° %s' %s''" (to_str d) (to_str m) (to_str s) in

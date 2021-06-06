@@ -1,6 +1,7 @@
 const Campbell = require("campbell");
 
-Campbell.logger.transports[0].level = "debug";
+Campbell.logger.transports[0].level =
+  process.env.NODE_ENV === "development" ? "debug" : "info";
 
 Campbell.appConfig.extendSchema({
   googleApiKey: {

@@ -58,7 +58,7 @@
           <v-subheader>Display</v-subheader>
           <v-divider class="mb-4" />
           <v-row>
-            <v-col cols="3">
+            <v-col cols="1">
               <v-dialog v-model="showColorPicker" width="225px">
                 <template v-slot:activator="{ on }">
                   <v-btn
@@ -75,6 +75,9 @@
                   v-model="color"
                 ></v-color-picker>
               </v-dialog>
+            </v-col>
+            <v-col cols="2">
+              <v-switch inset v-model="dashed" label="Dashed" />
             </v-col>
             <v-col cols="3">
               <v-switch inset v-model="showCard" label="Show Card" />
@@ -108,7 +111,7 @@ import PrecisionSlider from "./PrecisionSlider";
 
 import colors from "vuetify/lib/util/colors";
 const palette = ["red", "green", "amber", "blue", "purple", "teal"].map(
-  (name) => colors[name].base
+  name => colors[name].base
 );
 
 let colorIndex = 0;
@@ -146,33 +149,33 @@ const locations = {
     place_id: "ChIJD7fiBh9u5kcRYJSMaMOCCwQ",
     description: "Paris, France",
     lat: 48.856614,
-    lon: 2.3522219,
+    lon: 2.3522219
   },
   brest: {
     place_id: "ChIJk1uS2eG7FkgRqzCcF1iDSMY",
     description: "Brest, France",
     lat: 48.390394,
-    lon: -4.486075999999999,
+    lon: -4.486075999999999
   },
   miami: {
     place_id: "ChIJEcHIDqKw2YgRZU-t3XHylv8",
     description: "Miami, FL, USA",
     lat: 25.7616798,
-    lon: -80.1917902,
+    lon: -80.1917902
   },
   florence: {
     id: "ChIJrdbSgKZWKhMRAyrH7xd51ZM",
     description: "Florence, Metropolitan City of Florence, Italy",
     lat: 43.7695604,
-    lon: 11.2558136,
-  },
+    lon: 11.2558136
+  }
 };
 
 export default {
   components: {
     LocationSearch,
     PrecisionSlider,
-    AircraftSelector,
+    AircraftSelector
   },
   data() {
     return {
@@ -181,7 +184,7 @@ export default {
       algorithms: [
         { id: "dijkstra", name: "Dijkstra" },
         { id: "a*", name: "A*" },
-        { id: "wa*", name: "WA*" },
+        { id: "wa*", name: "WA*" }
       ],
       heurWeight: 1,
       showColorPicker: false,
@@ -195,9 +198,10 @@ export default {
       weather: true,
       // display options
       color: getColor(),
+      dashed: false,
       showCard: true,
       showGrid: false,
-      showGraph: false,
+      showGraph: false
     };
   },
   watch: {
@@ -206,7 +210,7 @@ export default {
     },
     arrival() {
       this.updatePrecision();
-    },
+    }
   },
   computed: {
     $app() {
@@ -239,7 +243,7 @@ export default {
         precision,
         directions,
         aircraft,
-        weather,
+        weather
       } = this;
       return {
         arrival,
@@ -249,9 +253,9 @@ export default {
         directions,
         aircraft,
         weather,
-        export_graph: showGraph,
+        export_graph: showGraph
       };
-    },
+    }
   },
   created() {
     this.updatePrecision();
@@ -263,16 +267,17 @@ export default {
       this.$progress.open();
       axios
         .post("/api/calculator/run", this.options)
-        .then((res) => {
+        .then(res => {
           const results = res.data;
           results.options.display = {
             color: this.color,
+            dashed: this.dashed,
             showCard: this.showCard,
             showGrid: this.showGrid,
-            showGraph: this.showGraph,
+            showGraph: this.showGraph
           };
           this.$progress.close();
-          this.$map.displayResults(results);
+          this.$map.addResults(results).display();
 
           // change color for next itinerary
           this.color = getColor();
@@ -306,7 +311,7 @@ export default {
     toggle() {
       if (this.dialog) return this.close();
       else return this.open();
-    },
-  },
+    }
+  }
 };
 </script>

@@ -20,22 +20,22 @@ window.CESIUM_BASE_URL = "";
 import * as Cesium from "cesium/Cesium";
 import "cesium/Widgets/widgets.css";
 
+import Results from "./Results";
+
 import WindPanel from "./WindPanel";
 import ResultsCard from "./ResultsCard";
 
-import mapMixin from "./map-mixin";
 export default {
-  mixins: [mapMixin],
   components: {
     WindPanel,
-    ResultsCard,
+    ResultsCard
   },
   data() {
     return {
       loading: true,
       status: "loading map",
       showCards: true,
-      results: [],
+      results: []
     };
   },
   computed: {
@@ -47,12 +47,12 @@ export default {
     },
     $wind() {
       return this.$refs.wind;
-    },
+    }
   },
   watch: {
     "$app.hideActions"(hide) {
       this.viewer.sceneModePicker.container.style.display = hide ? "none" : "";
-    },
+    }
   },
   async mounted() {
     setTimeout(() => {
@@ -80,13 +80,13 @@ export default {
         accessToken:
           "pk.eyJ1IjoibWF0aGlzdGxkIiwiYSI6ImNrcGQzNDd2cTA1enMyb28xMndhODV4MmoifQ.ViKqvStzsDYsYmH_bmmKxQ",
         scaleFactor: true,
-        maximumLevel: 5,
-      }), // new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/"}),
+        maximumLevel: 5
+      }) // new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/"}),
       // mapProjection: new Cesium.WebMercatorProjection()
     });
     // remove loader when rendered
     setTimeout(
-      function () {
+      function() {
         this.$progress.close();
       }.bind(this),
       3000
@@ -95,6 +95,11 @@ export default {
     this.$wind.init();
   },
   methods: {
+    addResults(res) {
+      const results = new Results(this, res);
+      this.results.push(results);
+      return results;
+    },
     clear() {
       // clean entities
       this.viewer.entities.removeAll();
@@ -104,24 +109,24 @@ export default {
       }
     },
     getScreenshot() {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         const targetResolutionScale = 1.0; // for screenshots with higher resolution set to 2.0 or even 3.0
         const timeout = 0; // in ms
         const viewer = this.viewer;
         const scene = viewer.scene;
-        const prepareScreenshot = function () {
+        const prepareScreenshot = function() {
           viewer.resolutionScale = targetResolutionScale;
           scene.preRender.removeEventListener(prepareScreenshot);
           // take snapshot after defined timeout to allow scene update (ie. loading data)
-          setTimeout(function () {
+          setTimeout(function() {
             scene.postRender.addEventListener(takeScreenshot);
           }, timeout);
         };
 
-        const takeScreenshot = function () {
+        const takeScreenshot = function() {
           scene.postRender.removeEventListener(takeScreenshot);
           const canvas = scene.canvas;
-          canvas.toBlob(function (blob) {
+          canvas.toBlob(function(blob) {
             const url = URL.createObjectURL(blob);
             resolve(url);
             // reset resolutionScale
@@ -130,8 +135,8 @@ export default {
         };
         scene.preRender.addEventListener(prepareScreenshot);
       });
-    },
-  },
+    }
+  }
 };
 </script>
 

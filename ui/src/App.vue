@@ -97,7 +97,6 @@ export default {
                     showGraph: !!showGraph,
                   },
                 };
-                console.log(x);
                 return res;
               });
               this.importResults(results);
@@ -175,7 +174,7 @@ export default {
       await this.saveFile(URL.createObjectURL(blob), "results.json");
     },
     async importResults(results) {
-      results.forEach((res) => this.$map.displayResults(res));
+      results.forEach((res) => this.$map.addResults(res).display());
     },
     async saveScreenShot() {
       const map = this.$refs.map;

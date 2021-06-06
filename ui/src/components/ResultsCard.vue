@@ -56,12 +56,12 @@ export default {
   props: {
     results: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
-      showDetails: false,
+      showDetails: false
     };
   },
   computed: {
@@ -98,9 +98,9 @@ export default {
       return [
         { icon: "fa-plane", text: this.results.options.aircraft },
         { icon: "fa-stopwatch", text: this.duration },
-        { icon: "fa-gas-pump", text: this.fuel },
+        { icon: "fa-gas-pump", text: this.fuel }
       ];
-    },
-  },
+    }
+  }
 };
 </script>

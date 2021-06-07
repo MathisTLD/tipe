@@ -1,6 +1,9 @@
 open Geo
 open Utils
 
+(** options de calcul *)
+
+(** représente les options de calcul  *)
 type options = {
   departure_date : int;
   departure : location;
@@ -13,23 +16,29 @@ type options = {
   export_graph: bool;
 } [@@deriving yojson]
 
+(** lis les options de calcul dans une string au format JSON *)
 let options_from_string str =
   let json = Yojson.Safe.from_string str in
   options_of_yojson json
 
+(** graphe *)
+
+(** représente un noeud du graphe *)
 type node = {
   point: point;
   date: Date.t;
   fuel: float;
 }
-let create_node ?(fuel = 0.) point date =
-  { point;date;fuel }
 
+(** représente une arête du graphe *)
 type edge = {
   nodes: node * node;
   cost: Aircraft.move_cost;
 }
 
+(** résultats *)
+
+(** représente une arête du graphe *)
 type step = {
   loc: location;
   fuel: float;
@@ -55,8 +64,10 @@ type results = {
   stats: results_stats;
 } [@@deriving yojson_of]
 
+(** Tas utilisé pour la file de priorité de Dijkstra et A*  *)
 module Heap = Pairing_heap
 
+(** lance le calcul avec les options fournies *)
 let run options =
   let open Printf in
   let open Utils in

@@ -1,52 +1,37 @@
 open Geo
 open Wind
 open Utils
-(* vect utilities *)
+
+(** fonctions d'aide pour les vecteurs *)
+
+(** produit scalaire (sert à calculer le vent de face en fct du cap) *)
 let prod_scal a b =
   (fst a *. fst b) +. (snd a *. snd b)
 
-let dilate (x,y) a =
-  (a*.x,a*.y)
-
+(** rotation d'angle 90° (sens trigo) (sert à calculer le vent de travers en fct du cap) *)
 let rot ((x,y): float * float) =
   (-.y,x)
 
-let norm (x,y) =
-  sqrt ((x*.x) +. (y*.y))
-
-let heading_to_vect heading =
-  let rec aux heading =
-    match heading with
-    | [] -> (0.,0.)
-    | [N] -> (0.,1.)
-    | [S] -> (0.,-1.)
-    | [E] -> (1.,0.)
-    | [W] -> (-1.,0.)
-    | d::rest -> (
-        let a = (aux [d]) in
-        let b = (aux rest) in
-        (fst a +. fst b,snd a +. snd b)
-      ) in
-  let (x,y) = aux heading in
-  dilate (x,y) (1. /. (norm (x,y)))
-
-(* FIXME: should use verticalSpeed on vertical phases *)
+(** performances pendant une phase (montée/croisière/descente)  *)
 type phase_performances = {
-  speed: float;
-  fuelFlow: float;
+  speed: float; (** m/s *)
+  fuelFlow: float; (** m^3/s *)
 }
+(** performances dans toutes les phases  *)
 type performances = {
   climb: phase_performances;
   cruise: phase_performances;
   descent: phase_performances;
 }
+(** propriétés d'un appareil  *)
 type properties = {
   name : string;
   fuelType : string;
   performances : performances;
 }
-(*  *)
+(** contient les propriétés des différents appareils *)
 let (aircrafts: (string, properties) Hashtbl.t) = Hashtbl.create 100
+(** charge les propriétés des différents appareils disponibles à partir d'un fichier json  *)
 let load_aircrafts () =
   let open Yojson.Safe in
   let json = from_file "data/aircrafts.json" in
@@ -73,11 +58,13 @@ let load_aircrafts () =
 load_aircrafts ();;
 
 
+(** coût d'un déplacement élémentaire  *)
 type move_cost = {
-  time: Date.Span.t;
-  fuel: float;
+  time: Date.Span.t; (** durée du déplacement *)
+  fuel: float; (** carburant consommé en m3 *)
 }
 
+(** représente un avion. [new aircraft "Beech Baron"] crée une instance d'avion avec les propriétés correspondant au nom "Beech Baron" *)
 class aircraft  model =
   object (self)
     val props = Hashtbl.find aircrafts model

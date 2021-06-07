@@ -2,16 +2,20 @@
 let earth_radius = 6371000. (* in meters *)
 
 (* Better use records with floats: https://stackoverflow.com/questions/10481910/whats-the-difference-between-records-and-tuples-in-ocaml#:~:text=The%20other%20differences%20are%20at,you%20can%20use%20object%20types.&text=Moreover%2C%20records%20can%20have%20mutable%20fields%2C%20tuples%20can't. *)
+(** représente une position géographique  *)
 type location = {
-  lat : float;
-  lon : float;
-  alt : float;
-} [@@deriving yojson]
+  lat : float; (** degrés  *)
+  lon : float; (** degrés  *)
+  alt : float; (** mètres  *)
+}
+[@@deriving yojson] (** convertisseur json pour le type location  *)
+(** idem mais sans l'altitude  *)
 type location_2D = {
   lat : float;
   lon : float;
 }
 
+(** encadrement d'une position (par 4 points d'une grille) *)
 type 'a surrounding ={
   top_right: 'a;
   top_left: 'a;
@@ -19,7 +23,7 @@ type 'a surrounding ={
   bottom_right: 'a
 }
 
-
+(** permet de convertir une position en string (utile pour le debug) *)
 let location_to_string ?(format="dd") (loc: location) =
   let deg_to_dms dd =
     let d = Float.floor dd in
@@ -36,9 +40,11 @@ let location_to_string ?(format="dd") (loc: location) =
     )
   | _ -> failwith "Unsupported location format: "^format
 
+(** conversion degrés -> radians  *)
 let to_rad deg =
   deg *. (Float.pi /. 180.)
 
+(** distance entre deux positions par formule d'Haversine  *)
 let distance (loc1: location) (loc2: location) =
   let lat1 = to_rad loc1.lat in
   let lat2 = to_rad loc2.lat in
@@ -58,6 +64,7 @@ let distance (loc1: location) (loc2: location) =
 
 (* https://www.igismap.com/formula-to-find-bearing-or-heading-angle-between-two-points-latitude-longitude/ *)
 (* Bearing would be measured from North direction i.e 0° bearing means North, 90° bearing is East, 180° bearing is measured to be South, and 270° to be West. *)
+(** [bearing loc1 loc2] donne le cap (en radians par rapport au nord) à suivre pour atteindre loc2 à partir de loc2  *)
 let bearing (loc1: location) (loc2: location) =
   let dlon = to_rad (loc2.lon -. loc1.lon) in
   let lat1 = to_rad loc1.lat in
@@ -68,9 +75,11 @@ let bearing (loc1: location) (loc2: location) =
   atan2 x y
 
 
+(** directions élémentaires  *)
 type direction = | N | S | E | W | Up | Down
 type heading = direction list
 (* generates n-th set of headings *)
+(** [gen_headings n] génère l'ensemble de directions (modèlisant un déplacement entre deux points de la grille) d'indice n  *)
 let gen_headings n =
   let t = Array.make (8*n) (0,0) in
   for k = -n to n do
@@ -97,6 +106,7 @@ let gen_headings n =
         Array.to_list t
       )) t)
 
+(** convertit une direction en string (pour le debug)  *)
 let heading_to_string heading =
   List.map (fun d -> match d with
       | N -> "n"| S -> "s" | E ->"e" |W->"w" |Up -> "⬆" | Down -> "⬇") heading |> String.concat ""
@@ -106,6 +116,8 @@ deg
    x: 0 -> 360 (0 is lon = 0)
    y: 0 -> 180 (0 is lat = -90)
 *)
+(** conversions entre latitudes et longitudes (exprimées en degrés) en degrés de coordonées sphériques*)
+
 let lat_to_deg lat =
   90. -. lat
 let deg_to_lat deg =
@@ -117,33 +129,51 @@ let deg_to_lon deg =
   if deg > 180. then deg -. 360.
   else deg
 
+(** point de la grille (ligne,colonne,altitude)  *)
 type point = int * int * int
-(* grid object *)
+
+
+(**
+   représente une grille discrètisant l'espace avec un pas le latitude/longitude constant et un ensemble d'altitudes choisi.
+   [new grid ~altitudes:[|0.;10000.|] 180] créée une grille avec un pas de 1° (méridien divisé en 180 segments de 1°) et avec les niveaux d'altitude 0m et 10000m
+*)
 class grid  ?(altitudes = [|0.|]) (n: int) =
   object (self)
+    (** nombre de points sur une colonne *)
     val ny = n+1 (* n equal angle segments for one meridian so n+1 points (including one for each pole) *)
+    (** nombre de points sur une ligne *)
     val nx = 2*n (* 2n equal angle segments for one parallel so 2n points as lat -180 = lat 180 *)
+    (** nombre de niveaux d'altitude *)
     val nz = Array.length altitudes
+    (** incrément en degrés de latitude (ou de longitude) entre deux points adjacents *)
     val increment = 180. /. (Float.of_int n)
-    (* then 0 <= i <= n and 0 <= j <= 2n-1 *)
+
+    (**  {_ accesseurs pour lire ces valeurs de l'exterieur} *)
+
     method nx = nx
     method ny = ny
     method nz = nz
     method increment = increment
+
+    (** associe un entier 0 <= n < nx*ny*nz à un point *)
     method id_of_point ((i,j,k): point) =
       k*nx*ny + i*ny + j
+    (** donne les coordonnées d'un point de la grille *)
     method location_of_point ((i,j,k): point) =
       let lat = deg_to_lat (increment *. (Float.of_int i)) in
       let lon = deg_to_lon (increment *. (Float.of_int j)) in
       let alt = altitudes.(k) in
       {lat;lon;alt}
+    (** distance entre deux points de la grille par formule d'Haversine (identique sur une même ligne pour un même déplacement donc pourrait bénéficier d'une mise en cache) *)
     method distance_between_points (a:point) (b:point) =
       (* consider adding caching *)
       distance (self#location_of_point a) (self#location_of_point b)
+    (** renvoie la ligne et la colonne (sans arrondi) correspondant à des coordonnées GPS *)
     method get_float_coordinates_2D ({lat;lon}: location_2D) =
       let i_float = (lat_to_deg lat) /. increment in
       let j_float = (lon_to_deg lon) /. increment in
       (i_float,j_float)
+    (** renvoie le points de la grille le plus proche *)
     method get_closest (loc: location) =
       let (i_float,j_float) = self#get_float_coordinates_2D {lat=loc.lat;lon=loc.lon} in
       let i = Float.to_int (Float.round i_float) in
@@ -155,6 +185,7 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
                                 else  (i+1,md,mi)   ))
           (0,0.,-1) altitudes in
       (i,j,k)
+    (** renvoie les points de la grille encardant un certain point de l'espace *)
     method get_surrounding_2D ({lat;lon}: location_2D) =
       let (i_float,j_float) = self#get_float_coordinates_2D {lat;lon} in
       let i1 = Float.to_int (Float.floor i_float) in
@@ -166,6 +197,7 @@ class grid  ?(altitudes = [|0.|]) (n: int) =
       let bottom_left = (i2,j1) in
       let bottom_right = (i2,j2) in
       {top_right;top_left;bottom_left;bottom_right}
+    (** [grid#resolve_next_point point heading] renvoie le point de la grille atteint après le déplacement défini par heading à partir de point *)
     method resolve_next_point (point: point) (heading: heading): point =
       let get_opposite ((i,j,k): point): point =
         (i,(j+(nx/2)) mod nx,k) in

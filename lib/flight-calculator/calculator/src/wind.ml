@@ -1,29 +1,37 @@
 open Geo
 open Utils
 
-(* weather utils *)
-let p0 = 1013.25 (* pressure at altitude 0m in mb *)
-(* constantes d'aide *)
+(** outils météo *)
+let p0 = 1013.25 (** pression à l'altitude 0m (en mb) *)
+
+(** constantes d'aide *)
+
 let k1 = 145366.45 *. 0.3048
 let k2 = 0.190284
 (* converts pressure-altitude in mb to an altitude in metters *)
 (* see : https://www.weather.gov/media/epz/wxcalc/pressureAltitude.pdf *)
+(** [pressure_to_altitude p] renvoie l'altitude (en m) correspondant à la pression p (en mb) dans le modèle de l'atmosphère isotherme  *)
 let pressure_to_altitude p =
   (1. -. (p /. p0) ** k2) *. k1
+(** [altitude_to_pressure a] renvoie la pression (en mb) correspondant à l'altitude a (en m) dans le modèle de l'atmosphère isotherme  *)
 let altitude_to_pressure a =
   ((((-. a) /. k1) -. 1.) ** (1./.k2)) *. p0
 
+
+(** outils d'interpolation *)
+
+(** [linear_interpolation val1 val2 u] renvoie l'interpolation linéaire entre les valeur val1 et val2 avec un coeff u in ∈ [0,1] *)
 let linear_interpolation val1 val2 u =
-  (* FIXME: remove me *)
   if(not (0. <= u && u <= 1.)) then failwith (Printf.sprintf "u: %f not in [0,1]" u);
   (1. -. u) *. val1 +. u *. val2
 
+(** comme linear_interpolation mais pour deux vecteurs (2D) *)
 let linear_interpolation_vect v1 v2 u =
   (linear_interpolation (fst v1) (fst v2) u, linear_interpolation (snd v1) (snd v2) u)
 
-(* interpolation utils *)
 (* arr should be a sorted array (asc) *)
 (* if 'a = 'b you can use 'compare' as cmp argument *)
+(** [index_sandwich cmp arr x] (arr trié par ordre croissant et de taille n) renvoie (i1,i2) les index des éléments inferieurs et superieurs à x (renvoie (0,0) si x<arr.(0) (n-1,n-1) si x>arr.(n-1) et (i,i) si x = arr.(i)) *)
 let index_sandwich (cmp: 'a -> 'b -> int) (arr: ('a array)) (x: 'b): int * int =
   let n = Array.length arr in
   if n = 0 then failwith "array should not be empty"
@@ -41,12 +49,13 @@ let index_sandwich (cmp: 'a -> 'b -> int) (arr: ('a array)) (x: 'b): int * int =
     )
   )
 
-
+(** crée un id sous la forme YYYY-MM-DDTHH pour une date donée (correspond à la date d'un fichier GRIB2) *)
 let date_id_of_time t =
   let open Utils.Date in
   let iso = to_iso_string t in
   Scanf.sscanf (String.sub iso 0 13) "%u-%u-%uT%u" (fun y m d h -> Printf.sprintf "%04u%02u%02uT%02u" y m d h)
 
+(** réciproque de date_id_of_time  *)
 let time_of_date_id id =
   let y = String.sub id 0 4 in
   let m = String.sub id 4 2 in
@@ -56,7 +65,7 @@ let time_of_date_id id =
   let iso = Printf.sprintf "%s-%s-%sT%s:00:00Z" y m d h in
   of_iso_string iso
 
-(* used for debug *)
+(** affiche les clés d'un objet de type Grib.Handle.t (utilisé pour le debug) *)
 let print_handle handle =
   let open Grib in
   let print_key key =
@@ -73,6 +82,7 @@ let print_handle handle =
     print_endline (Printf.sprintf "--- %s: %s" key description) in
   Handle.Keys.iter print_key handle
 
+(** représente une componentsnte du vent à une date donnée à une altitude donnée  *)
 class wind_component handle =
   let open Grib in
   let get_int = Handle.get_int handle in
@@ -128,6 +138,7 @@ class wind_component handle =
       linear_interpolation value_left value_right v
   end
 
+(** représente le vent (vecteur (u,v)) à une date donnée à une altitude donnée  *)
 class wind_level (u: wind_component) (v:wind_component ) =
   let level = u#level in
   let altitude = u#altitude in
@@ -150,6 +161,7 @@ class wind_level (u: wind_component) (v:wind_component ) =
 
   end
 
+(** représente le vent à une date donnée (sur plusieurs niveaux d'altitude)  *)
 class wind_date (id: string) =
   let open Utils in
   let date = time_of_date_id id in
@@ -215,6 +227,7 @@ class wind_date (id: string) =
       )
   end
 
+(** permet d'obtenir le vent à une certaine date et une certaine altitude  *)
 class wind_data_provider =
   object (self)
     val cache = Hashtbl.create 10
@@ -240,4 +253,5 @@ class wind_data_provider =
 
 let provider = new wind_data_provider
 
+(** permet d'obtenir le vent sans instancier un nouveau wind_data_provider *)
 let get_wind = provider#get_value

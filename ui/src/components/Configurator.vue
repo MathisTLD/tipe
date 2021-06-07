@@ -186,10 +186,10 @@ export default {
         { id: "a*", name: "A*" },
         { id: "wa*", name: "WA*" }
       ],
-      heurWeight: 1,
+      heurWeight: 0.8,
       showColorPicker: false,
       // options
-      algorithm: "dijkstra",
+      algorithm: "wa*",
       departure: locations.paris,
       arrival: locations.florence,
       precision: null, // automatically set on creation

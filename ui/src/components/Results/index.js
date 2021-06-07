@@ -34,11 +34,12 @@ class Results {
   displayPath() {
     const color = Cesium.Color.fromCssColorString(this.options.display.color);
     const material = this.options.display.dashed
-      ? Cesium.Material.fromType("PolylineDash", { color })
+      ? Cesium.Material.fromType("PolylineDash", { color, dashLength: 20 })
       : Cesium.Material.fromType("Color", { color });
     const coordinates = this.path
       .map(({ loc }) => {
-        return [loc.lon, loc.lat, this.id /* loc.alt */]; // visual effect isn't that good when showing altitude
+        // FIXME: showing fake altitude could be misleading
+        return [loc.lon, loc.lat, this.id * 10000 /* loc.alt */]; // visual effect isn't that good when showing altitude
       })
       .flat();
     const polylines = new Cesium.PolylineCollection();

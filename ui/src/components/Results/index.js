@@ -105,6 +105,10 @@ class Results {
   get viewer() {
     return this.$map.viewer;
   }
+  toJSON() {
+    const { options, path, stats } = this;
+    return { options, path, stats };
+  }
 }
 
 export default Results;

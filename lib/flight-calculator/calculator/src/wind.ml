@@ -39,7 +39,7 @@ let index_sandwich (cmp: 'a -> 'b -> int) (arr: ('a array)) (x: 'b): int * int =
     if cmp arr.(0) x >= 0 then (0,0)
     else (
       let i = ref 0 in
-      (* FIXME: dichotomous search much faster (but this implementation is ok for small arrays) *)
+      (* dichotomous search is much faster (but this implementation is ok for small arrays) *)
       while (cmp arr.(!i) x < 0) && (!i < n) do
         i := !i + 1;
       done;
@@ -120,7 +120,6 @@ class wind_component handle =
     method grib_handle = handle
 
     method get_value {lat;lon} =
-      (* TODO: test interpolation *)
       let points_2D = grid#get_surrounding_2D ({lat;lon}) in
       let (i,j) = grid#get_float_coordinates_2D {lat;lon} in
       let u = i -. Float.of_int (fst points_2D.top_left) in
@@ -217,11 +216,9 @@ class wind_date (id: string) =
         (* we have to interpolate value *)
         let layer1 = layers.(i1) in
         let layer2 = layers.(i2) in
-        (* FIXME: remove me *)
         if(not (layer1#altitude < loc.alt && loc.alt < layer2#altitude)) then failwith (Printf.sprintf "invalid layer altitudes: %f not in [%f,%f]" loc.alt layer1#altitude layer2#altitude);
         let v1 = layers.(i1)#get_value loc2D in
         let v2 = layers.(i2)#get_value loc2D in
-        (* TODO: is this interpolation method matches phisics reality *)
         let u = (loc.alt -. layer1#altitude) /. (layer2#altitude -. layer1#altitude) in
         linear_interpolation_vect v1 v2 u
       )
@@ -241,7 +238,6 @@ class wind_data_provider =
         )
       | Some data -> data
     method get_value (date: Date.t)  (loc: location)  : (float * float) =
-      (* TODO: test interpolation *)
       let open Date in
       let data1 = self#get_date_data (date_id_of_time date) in (* data just before *)
       let data2 = self#get_date_data (date_id_of_time (add date (Span.of_sec 3600.))) in (* data just after *)

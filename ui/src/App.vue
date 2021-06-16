@@ -1,11 +1,5 @@
 <template>
   <v-app>
-    <!-- <v-app-bar app dense>
-      <v-toolbar-title>FIND_A_NAME</v-toolbar-title>
-      <v-spacer />
-      {{ version }}
-    </v-app-bar> -->
-
     <v-main>
       <v-container fluid class="fill-height ma-0 pa-0">
         <Map ref="map" />
@@ -178,15 +172,13 @@ export default {
     },
     async saveScreenShot() {
       const map = this.$refs.map;
-      async function cloneCanvas(oldCanvas, scale = 1) {
-        //create a new canvas
+      async function getMapCanvasClone(scale = 1) {
+        const mapCanvas = map.viewer.scene.canvas;
         const newCanvas = document.createElement("canvas");
         const ctx = newCanvas.getContext("2d");
-        //set dimensions
-        newCanvas.width = scale * oldCanvas.width;
-        newCanvas.height = scale * oldCanvas.height;
+        newCanvas.width = scale * mapCanvas.width;
+        newCanvas.height = scale * mapCanvas.height;
         const url = await map.getScreenshot();
-        // const url = oldCanvas.toDataURL("image/jpg");
         await new Promise((resolve) => {
           const img = new Image();
           img.setAttribute("src", url);
@@ -195,10 +187,9 @@ export default {
             resolve();
           };
         });
-        //return the new canvas
         return newCanvas;
       }
-      const mapCanvasClone = await cloneCanvas(map.viewer.scene.canvas, 2);
+      const mapCanvasClone = await getMapCanvasClone(2);
       await html2canvas(document.body, {
         canvas: mapCanvasClone,
         backgroundColor: null,
